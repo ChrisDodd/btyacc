@@ -250,6 +250,7 @@ extern char tflag;
 extern char vflag;
 
 extern char *myname;
+extern char *symbol_prefix;
 extern char *cptr;
 extern char *line;
 extern int outline;
