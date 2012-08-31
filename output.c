@@ -807,49 +807,59 @@ void output_defines()
 {
     register int c, i;
     register char *s;
+    FILE *dc_file;
+
+    if(dflag) {
+      fprintf(defines_file, "#ifndef _yacc_defines_h_\n");
+      fprintf(defines_file, "#define _yacc_defines_h_\n\n");
+    }
+
+    /* VM: Print to either code file or defines file but not to both */
+    dc_file = dflag ? defines_file : code_file;
 
     for (i = 2; i < ntokens; ++i)
     {
 	s = symbol_name[i];
 	if (is_C_identifier(s))
 	{
-	    fprintf(code_file, "#define ");
-	    if (dflag) fprintf(defines_file, "#define ");
+	    fprintf(dc_file, "#define ");
 	    c = *s;
 	    if (c == '"')
 	    {
 		while ((c = *++s) != '"')
 		{
-		    putc(c, code_file);
-		    if (dflag) putc(c, defines_file);
+		    putc(c, dc_file);
 		}
 	    }
 	    else
 	    {
 		do
 		{
-		    putc(c, code_file);
-		    if (dflag) putc(c, defines_file);
+		    putc(c, dc_file);
 		}
 		while ((c = *++s));
 	    }
 	    ++outline;
-	    fprintf(code_file, " %d\n", symbol_value[i]);
-	    if (dflag) fprintf(defines_file, " %d\n", symbol_value[i]);
+	    fprintf(dc_file, " %d\n", symbol_value[i]);
 	}
     }
 
     ++outline;
-    fprintf(code_file, "#define YYERRCODE %d\n", symbol_value[1]);
+    fprintf(dc_file, "#define YYERRCODE %d\n", symbol_value[1]);
 
     if (dflag && unionized)
     {
 	fclose(union_file);
 	union_file = fopen(union_file_name, "r");
 	if (union_file == NULL) open_error(union_file_name);
-	while ((c = getc(union_file)) != EOF)
-	    putc(c, defines_file);
-	fprintf(defines_file, " YYSTYPE;\nextern YYSTYPE yylval;\n");
+	while ((c = getc(union_file)) != EOF) {
+	  putc(c, defines_file);
+	}
+	fprintf(defines_file, "extern YYSTYPE yylval;\n");
+    }
+
+    if(dflag) {
+      fprintf(defines_file, "\n#endif\n");
     }
 }
 

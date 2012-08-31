@@ -1,3 +1,9 @@
+#
+# Makefile for BtYacc.
+#
+
+VERSION       = 3-0
+
 DEST	      = .
 
 HDRS	      = defs.h mstring.h
@@ -25,9 +31,9 @@ PROGRAM	      = btyacc
 SRCS	      = closure.c error.c lalr.c lr0.c main.c mkpar.c output.c	\
 		mstring.c reader.c readskel.c skeleton.c symtab.c verbose.c warshall.c
 
-OTHERS	      = ACKNOWLEDGEMENTS NEW_FEATURES NO_WARRANTY README README.BYACC \
+OTHERS	      = README README.BYACC \
 		Makefile btyaccpa.ske push.skel empty.y skel2c manpage makefile.dos \
-		BUILDING skeleton.c
+		skeleton.c
 
 all:		$(PROGRAM)
 
@@ -66,9 +72,11 @@ tar:
 		rm -f btyacc.tar btyacc.tar.gz
 		tar cvf btyacc.tar $(OTHERS) $(SRCS) $(HDRS) test/*.y
 		gzip -9 btyacc.tar
+		mv btyacc.tar.gz btyacc-$(VERSION).tar.gz
 
 zip:
 		zip btyacc.zip $(OTHERS) $(SRCS) $(HDRS) test/*.y
+		mv btyacc.zip btyacc-$(VERSION).zip
 
 skeleton.c: btyaccpa.ske skel2c
 		awk -f skel2c btyaccpa.ske >skeleton.c

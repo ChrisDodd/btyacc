@@ -1,9 +1,0 @@
-Hopefully, on any POSIX machine you should be able to just type `make'
-and everything should work.  If you don't have nawk and can't get it
-(or something equivalent, like gawk), there's an awk version of skel2c.
-
-For MSDOS, there a `makefile.dos' that should do the trick
-
-The result of this should be a single executable called `btyacc' which
-you can install anywhere you like; it does not require any other files
-in the distribution to run.

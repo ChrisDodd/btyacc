@@ -1,4 +1,6 @@
-/* routines for printing error messages  */
+/* 
+ * routines for printing error messages  
+ */
 
 #include "defs.h"
 #include <stdarg.h>

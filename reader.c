@@ -431,6 +431,7 @@ loop:
 
 void copy_union()
 {
+    FILE *dc_file;
     register int c;
     int depth;
     int u_lineno = lineno;
@@ -443,37 +444,39 @@ void copy_union()
     if (!lflag)
 	fprintf(text_file, line_format, lineno, (inc_file?inc_file_name:input_file_name));
 
-    fprintf(text_file, "typedef union");
-    if (dflag) fprintf(union_file, "typedef union");
+    /* VM: Print to either code file or defines file but not to both */
+    dc_file = dflag ? union_file : text_file;
+
+    fprintf(dc_file, "\ntypedef union");
 
     depth = 0;
 loop:
     c = *cptr++;
-    putc(c, text_file);
-    if (dflag) putc(c, union_file);
+    putc(c, dc_file);
     switch (c) {
     case '\n':
-	get_line();
-	if (line == 0) unterminated_union(u_lineno, u_line, u_cptr);
-	goto loop;
+      get_line();
+      if (line == 0) unterminated_union(u_lineno, u_line, u_cptr);
+      goto loop;
     case '{':
-	++depth;
-	goto loop;
+      ++depth;
+      goto loop;
     case '}':
-	if (--depth == 0) {
-	    fprintf(text_file, " YYSTYPE;\n");
-	    FREE(u_line);
-	    return; }
-	goto loop;
+      if (--depth == 0) {
+	fprintf(dc_file, " YYSTYPE;\n");
+	FREE(u_line);
+	return; }
+      goto loop;
     case '\'':
     case '"':
-	copy_string(c, text_file, dflag ? union_file : 0);
-	goto loop;
+      copy_string(c, dc_file, 0);
+      goto loop;
     case '/':
-	copy_comment(text_file, dflag ? union_file : 0);
-	goto loop;
+      copy_comment(dc_file, 0);
+      goto loop;
     default:
-	goto loop; }
+      goto loop;
+    }
 }
 
 int hexval(int c)
@@ -639,13 +642,55 @@ int get_number()
     return (n);
 }
 
+// 
+// Date: Mon, 29 Jun 1998 16:36:47 +0200
+// From: Matthias Meixner <meixner@mes.th-darmstadt.de>
+// Organization: TH Darmstadt, Mikroelektronische Systeme
+// 
+// While using your version of BTYacc (V2.1), I have found a bug. 
+// It does not correctly
+// handle typenames, if one typename is a prefix of another one and
+// if this type is used after the longer one. In this case BTYacc 
+// produces invalid code.
+// 
+// e.g. in:
+// --------------------------------------------
+// %{
+//  
+// #include <stdlib.h>
+//   
+//    struct List {
+//       struct List *next;
+//       int foo;
+//    };
+//  
+// %}
+// %union {
+//    struct List *fooList;
+//    int foo;
+// }
+//  
+// %type <fooList> a
+// %type <foo> b
+//  
+// %token <foo> A 
+//  
+// %%
+//  
+// a: b   {$$=malloc(sizeof(*$$));$$->next=NULL;$$->foo=$1;}
+//  | a b {$$=malloc(sizeof(*$$));$$->next=$1;$$->foo=$2;}
+//  
+// b: A {$$=$1;}
+// 
 static char *cache_tag(char *tag, int len)
 {
 int	i;
 char	*s;
 
     for (i = 0; i < ntags; ++i) {
-	if (strncmp(tag, tag_table[i], len) == 0)
+	if (strncmp(tag, tag_table[i], len) == 0 &&  
+	    // VM: this is bug fix proposed by Matthias Meixner
+	    tag_table[i][len]==0)
 	    return (tag_table[i]); }
     if (ntags >= tagmax) {
 	tagmax += 16;
