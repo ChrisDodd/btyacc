@@ -291,7 +291,8 @@ int keyword()
     cachec(NUL);
     
     if ((key = bsearch(cache, keywords, sizeof(keywords)/sizeof(*key),
-		       sizeof(*key), strcmp)))
+		       sizeof(*key),
+		       (int (*)(const void *, const void *))strcmp)))
       return key->token; 
   } else {
     ++cptr;

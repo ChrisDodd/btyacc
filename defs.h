@@ -391,7 +391,7 @@ void lr0(void);
 
 /* main.c */
 void done(int);
-void onintr(void);
+void onintr(int);
 void set_signals(void);
 void usage(void);
 void getargs(int, char **);

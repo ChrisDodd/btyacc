@@ -76,7 +76,7 @@ void done(int k)
 }
 
 
-void onintr()
+void onintr(int ignore)
 {
     done(1);
 }

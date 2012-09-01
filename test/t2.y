@@ -1,14 +1,46 @@
-
 %union {
-    Scope	*scope;
-    Expr	*expr;
-    Expr_List	*elist;
-    Type	*type;
-    Decl	*decl;
-    Decl_List	*dlist;
-    Code	*code;
-    char	*id;
+    struct Scope	*scope;
+    struct Expr		*expr;
+    struct Expr_List	*elist;
+    struct Type		*type;
+    struct Decl		*decl;
+    struct Decl_List	*dlist;
+    struct Code		*code;
+    const char		*id;
+};
+
+%{
+    struct Decl {
+	struct Scope	*scope;
+	struct Type	*type;
+	int		istype;
     };
+    extern struct Scope *global_scope;
+    enum { ADD, SUB, MUL, MOD, DIV, REF };
+
+    struct Decl_List *append_dlist(struct Decl_List *, struct Decl *);
+    struct Type *bare_const(void);
+    struct Type *bare_extern(void);
+    struct Type *bare_register(void);
+    struct Type *bare_static(void);
+    struct Type *bare_volatile(void);
+    struct Decl_List *build_dlist(struct Decl *);
+    struct Expr *build_expr(struct Expr *, int, struct Expr *);
+    struct Code *build_expr_code(struct Expr *);
+    struct Decl *build_function(struct Decl *, struct Decl_List *, struct Type *);
+    struct Code *build_if(struct Expr *, struct Code *, struct Code *);
+    struct Decl *declare(struct Scope *, const char *, struct Type *);
+    struct Decl *finish_fn_def(struct Decl *, struct Code *);
+    struct Decl *lookup(struct Scope *, const char *);
+    struct Decl *make_array(struct Decl *, struct Expr *);
+    struct Decl *make_pointer(struct Decl *, struct Type *);
+    struct Scope *new_scope(struct Scope *);
+    struct Scope *start_fn_def(struct Scope *, struct Decl *);
+    struct Type *type_combine(struct Type *, struct Type *);
+    struct Expr *var_expr(struct Scope *, const char *);
+    struct Code *code_append(struct Code *, struct Code *);
+
+%}
 
 %left '+' '-'
 %left '*' '/' '%'
@@ -36,14 +68,14 @@
 
 opt_scope($e):		[ $$ = $e; ]
   | CLCL		[ $$ = global_scope; ]
-  | opt_scope ID CLCL	[ Decl *d = lookup($1, $2);
-			  if (!d || !d->scope) YERROR;
+  | opt_scope ID CLCL	[ struct Decl *d = lookup($1, $2);
+			  if (!d || !d->scope) YYERROR;
 			  $$ = d->scope; ]
   ;
 
 typename($e): opt_scope ID
-      [ Decl *d = lookup($1, $2);
-	if (!d || !d->istype()) YYERROR;
+      [ struct Decl *d = lookup($1, $2);
+	if (!d || !d->istype) YYERROR;
 	$$ = d->type; ]
   ;
 
@@ -90,7 +122,7 @@ declarator($e, $t):
   | '*' cv_quals declarator($e, $t) %prec PREFIX
 	  { $$ = make_pointer($3, $2); }
   | declarator '[' expr($e) ']'
-	  { $$ = make_array($1->type, $3); }
+	  { $$ = make_array($1, $3); }
   | declarator '(' formal_arg_list($e) ')' cv_quals
 	  { $$ = build_function($1, $3, $5); }
   ;

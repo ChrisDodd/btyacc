@@ -19,7 +19,14 @@ typedef int Yshort;
 
 %% tables
 
+#ifdef __cplusplus
 #define _C_ "C"
+#else
+#define _C_
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L
+#define inline
+#endif /* C99 */
+#endif /* C++ */
 
 extern _C_ Yshort yylhs[];
 extern _C_ Yshort yylen[];
@@ -62,16 +69,16 @@ extern _C_ char *yyrule[];
 
 #define YYPOSNARG(n) ((yyps->psp)[1-yym+(n)-1])
 #define YYPOSNOUT    (yyps->pos)
-#endif
+#endif /* YYREDUCEPOSNFUNC */
 
 // If delete function is not defined by the user, do not deletions.
 #ifndef YYDELETEVAL
-#define YYDELETEVAL(v) 
+#define YYDELETEVAL(v, x) 
 #endif
 
 // If delete function is not defined by the user, do not deletions.
 #ifndef YYDELETEPOSN
-#define YYDELETEPOSN(v) 
+#define YYDELETEPOSN(v, x) 
 #endif
 
 #define yyclearin (yychar=(-1))
@@ -89,6 +96,8 @@ extern _C_ char *yyrule[];
 #ifdef YYDEBUG
 int yydebug;
 #endif
+
+extern void yyerror(const char *, ...);
 
 int yynerrs;
 
@@ -108,7 +117,7 @@ YYPOSN  yyretposn;
                                  yyps->save->save==0) goto yyvalid; } while(0)
 
 struct yyparsestate {
-  yyparsestate *save;        // Previously saved parser state
+  struct yyparsestate *save;        // Previously saved parser state
   int           state;
   int           errflag;
   Yshort       *ssp;         // state stack pointer
@@ -125,10 +134,10 @@ struct yyparsestate {
 };
 
 // Current parser state
-static yyparsestate *yyps=0;
+static struct yyparsestate *yyps=0;
 
 // yypath!=NULL: do the full parse, starting at *yypath parser state.
-static yyparsestate *yypath=0;
+static struct yyparsestate *yypath=0;
 
 // Base of the lexical value queue
 static YYSTYPE *yylvals=0;
@@ -172,14 +181,15 @@ static Yshort *yylexemes=0;
 // Local prototypes.
 //
 int yyparse(void);
+int yylex(void);
 
-int  YYLex1();
-int  yyexpand();
-void YYSCopy(YYSTYPE *to, YYSTYPE *from, int size);
-void YYPCopy(YYPOSN  *to, YYPOSN  *from, int size);
-void YYMoreStack(yyparsestate *yyps);
-yyparsestate *YYNewState(int size);
-void YYFreeState(yyparsestate *p);
+static int  YYLex1();
+static int  yyexpand();
+static void YYSCopy(YYSTYPE *to, YYSTYPE *from, int size);
+static void YYPCopy(YYPOSN  *to, YYPOSN  *from, int size);
+static void YYMoreStack(struct yyparsestate *yyps);
+static struct yyparsestate *YYNewState(int size);
+static void YYFreeState(struct yyparsestate *p);
 
 
 %% body
@@ -190,8 +200,10 @@ void YYFreeState(yyparsestate *p);
 //
 int yyparse() {
   int yym, yyn, yystate, yychar, yynewerrflag;
-  yyparsestate *yyerrctx = NULL;
+  struct yyparsestate *yyerrctx = NULL;
+#ifdef YYREDUCEPOSNFUNC
   int reduce_posn;
+#endif /* YYREDUCEPOSNFUNC */
 
 #if YYDEBUG
   char *yys;
@@ -262,7 +274,7 @@ int yyparse() {
       }
 #endif
       // Switch to the next conflict context
-      yyparsestate *save = yypath;
+      struct yyparsestate *save = yypath;
       yypath = save->save;
       ctry = save->ctry;
       if (save->state != yystate) 
@@ -283,7 +295,7 @@ int yyparse() {
         printf("\n");
       }
 #endif
-      yyparsestate *save = YYNewState(yyps->ssp - yyps->ss);
+      struct yyparsestate *save = YYNewState(yyps->ssp - yyps->ss);
       save->save    = yyps->save;
       save->state   = yystate;
       save->errflag = yyps->errflag;
@@ -306,10 +318,16 @@ int yyparse() {
       if (!yyps->save) {
         // If this is a first conflict in the stack, start saving lexemes
         if (!yylexemes) {
+#ifdef __cplusplus
           yylexemes = new Yshort[YYSTACKGROWTH];
           yylvals = new YYSTYPE[YYSTACKGROWTH];
-          yylvlim = yylvals + YYSTACKGROWTH; 
           yylpsns = new YYPOSN[YYSTACKGROWTH];
+#else
+          yylexemes = malloc(sizeof(Yshort) * YYSTACKGROWTH);
+          yylvals = malloc(sizeof(YYSTYPE) * YYSTACKGROWTH);
+          yylpsns = malloc(sizeof(YYPOSN) * YYSTACKGROWTH);
+#endif
+          yylvlim = yylvals + YYSTACKGROWTH; 
           yylplim = yylpsns + YYSTACKGROWTH; 
         }
         if (yylvp == yylve) {
@@ -392,7 +410,7 @@ yyerrlab:
 yyerrhandler:
   while (yyps->save) { 
     int ctry; 
-    yyparsestate *save = yyps->save;
+    struct yyparsestate *save = yyps->save;
 #if YYDEBUG
     if (yydebug)
       printf("yydebug[%d,%d]: ERROR in state %d, CONFLICT BACKTRACKING to state %d, %d tokens\n",
@@ -559,7 +577,9 @@ yyreduce:
      no position will be assigned at trial time and if no position handling is present */
   memset(&yyps->pos, 0, sizeof(yyps->pos));
 
-  reduce_posn = TRUE;
+#ifdef YYREDUCEPOSNFUNC
+  reduce_posn = 1;
+#endif /* YYREDUCEPOSNFUNC */
 
   switch (yyn) {
 
@@ -650,7 +670,7 @@ yyvalid:
     goto yyabort;
   }
   while (yyps->save) {
-    yyparsestate *save = yyps->save;
+    struct yyparsestate *save = yyps->save;
     yyps->save = save->save;
     save->save = yypath;
     yypath = save;
@@ -693,12 +713,12 @@ yyabort:
   }
 
   while (yyps) {
-    yyparsestate *save = yyps;
+    struct yyparsestate *save = yyps;
     yyps = save->save;
     YYFreeState(save);
   }
   while (yypath) {
-    yyparsestate *save = yypath;
+    struct yyparsestate *save = yypath;
     yypath = save->save;
     YYFreeState(save); 
   }
@@ -711,12 +731,12 @@ yyaccept:
     YYFreeState(yyerrctx); yyerrctx = NULL;
   }
   while (yyps) {
-    yyparsestate *save = yyps;
+    struct yyparsestate *save = yyps;
     yyps = save->save;
     YYFreeState(save);
   }
   while (yypath) {
-    yyparsestate *save = yypath;
+    struct yyparsestate *save = yypath;
     yypath = save->save;
     YYFreeState(save); 
   }
@@ -753,15 +773,27 @@ int yyexpand() {
   { Yshort  *tl = yylexemes; 
     YYSTYPE *tv = yylvals;
     YYPOSN  *tp = yylpsns;
+#ifdef __cplusplus
     yylvals = new YYSTYPE[s];
     yylpsns = new YYPOSN[s];
     yylexemes = new Yshort[s];
+#else
+    yylvals = malloc(sizeof(YYSTYPE) * s);
+    yylpsns = malloc(sizeof(YYPOSN) * s);
+    yylexemes = malloc(sizeof(Yshort) * s);
+#endif
     memcpy(yylexemes, tl, (s-YYSTACKGROWTH)*sizeof(Yshort));
     YYSCopy(yylvals, tv, s-YYSTACKGROWTH);
     YYPCopy(yylpsns, tp, s-YYSTACKGROWTH);
+#ifdef __cplusplus
     delete[] tl;
     delete[] tv;
     delete[] tp;
+#else
+    free(tl);
+    free(tv);
+    free(tp);
+#endif
   }
   yylvp = yylve = yylvals + p;
   yylvlim = yylvals + s;
@@ -785,8 +817,9 @@ void YYPCopy(YYPOSN *to, YYPOSN *from, int size) {
   }
 }
 
-void YYMoreStack(yyparsestate *yyps) {
+void YYMoreStack(struct yyparsestate *yyps) {
   int p = yyps->ssp - yyps->ss;                               
+#ifdef __cplusplus
   Yshort  *tss = yyps->ss;
   YYSTYPE *tvs = yyps->vs;
   YYPOSN  *tps = yyps->ps;
@@ -800,25 +833,45 @@ void YYMoreStack(yyparsestate *yyps) {
   delete[] tss;
   delete[] tvs;
   delete[] tps;
+#else
+  yyps->stacksize += YYSTACKGROWTH;                           
+  yyps->ss = realloc(yyps->ss, sizeof(Yshort ) * yyps->stacksize);   
+  yyps->vs = realloc(yyps->vs, sizeof(YYSTYPE) * yyps->stacksize);  
+  yyps->ps = realloc(yyps->ps, sizeof(YYPOSN ) * yyps->stacksize);  
+#endif
   yyps->ssp = yyps->ss + p;                                   
   yyps->vsp = yyps->vs + p;                                   
   yyps->psp = yyps->ps + p;                                   
 }
 
-yyparsestate *YYNewState(int size) {
+struct yyparsestate *YYNewState(int size) {
+#ifdef __cplusplus
   yyparsestate *p = new yyparsestate;
-  p->stacksize = size+4;
   p->ss = new Yshort [size + 4];
   p->vs = new YYSTYPE[size + 4];
   p->ps = new YYPOSN [size + 4];
+#else
+  struct yyparsestate *p = malloc(sizeof(struct yyparsestate));
+  p->ss = malloc(sizeof(Yshort ) * (size + 4));
+  p->vs = malloc(sizeof(YYSTYPE) * (size + 4));
+  p->ps = malloc(sizeof(YYPOSN ) * (size + 4));
+#endif
+  p->stacksize = size+4;
   memset(&p->vs[0], 0, (size+4)*sizeof(YYSTYPE));
   memset(&p->ps[0], 0, (size+4)*sizeof(YYPOSN));
   return p;
 }
 
-void YYFreeState(yyparsestate *p) {
+void YYFreeState(struct yyparsestate *p) {
+#ifdef __cplusplus
   delete[] p->ss;
   delete[] p->vs;
   delete[] p->ps;
   delete p;
+#else
+  free(p->ss);
+  free(p->vs);
+  free(p->ps);
+  free(p);
+#endif
 }
