@@ -1,5 +1,5 @@
 /*
-** This file generated automatically from 
+** This file generated automatically from btyaccpa.ske
 */
 
 #include "defs.h"

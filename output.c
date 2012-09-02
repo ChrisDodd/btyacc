@@ -810,8 +810,13 @@ void output_defines()
     FILE *dc_file;
 
     if(dflag) {
-      fprintf(defines_file, "#ifndef _yacc_defines_h_\n");
-      fprintf(defines_file, "#define _yacc_defines_h_\n\n");
+	char *p, *tmp = strdup(defines_file_name);
+	for (p = tmp; *p; p++)
+	    if (!isalnum(*p))
+		*p = '_';
+	fprintf(defines_file, "#ifndef _%s_\n", tmp);
+	fprintf(defines_file, "#define _%s_\n\n", tmp);
+	free(tmp);
     }
 
     /* VM: Print to either code file or defines file but not to both */

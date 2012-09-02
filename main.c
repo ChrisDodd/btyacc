@@ -10,14 +10,15 @@ char tflag;
 char vflag;
 int Eflag = 0;
 
-char *file_prefix = "y";
 char *myname = "yacc";
 #ifdef __MSDOS__
 #define DIR_CHAR '\\'
 #define DEFAULT_TMPDIR "."
+char *file_prefix = "y";
 #else  /* Unix */
 #define DIR_CHAR '/'
 #define DEFAULT_TMPDIR "/tmp"
+char *file_prefix = 0;
 #endif
 char *temp_form = "yacc_t_XXXXXX";
 
@@ -156,7 +157,7 @@ void getargs(int argc, char **argv)
 	      *++ps = NULL;
 	    }
 	    continue;
-	      
+
 	case 'E':
 	    Eflag = 1;
 	    break;
@@ -175,6 +176,10 @@ void getargs(int argc, char **argv)
 
 	case 'v':
 	    vflag = 1;
+	    break;
+
+	case 'y':
+	    file_prefix = "y";
 	    break;
 
 	case 'S':
@@ -217,6 +222,10 @@ void getargs(int argc, char **argv)
 		vflag = 1;
 		break;
 
+	    case 'y':
+		file_prefix = "y";
+		break;
+
 	    default:
 		usage();
 	    }
@@ -232,9 +241,9 @@ no_more_options:;
       if (input_file_name) {
 	file_prefix = strdup(input_file_name);
 	if ((s = strrchr(file_prefix, '.')))
-	  *s = 0; 
+	  *s = 0;
       } else {
-	file_prefix = "y"; 
+	file_prefix = "y";
       }
     }
 }
@@ -246,7 +255,7 @@ char *allocate(unsigned n)
     p = NULL;
     if (n)
     {
-        /* VM: add a few bytes here, cause 
+        /* VM: add a few bytes here, cause
          * Linux calloc does not like sizes like 32768 */
 	p = CALLOC(1, n+10);
 	if (!p) no_space();

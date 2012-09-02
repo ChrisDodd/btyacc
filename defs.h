@@ -59,9 +59,15 @@ typedef int Yshort;
 
 /* defines for constructing filenames */
 
+#ifdef __MSDOS__
 #define DEFINES_SUFFIX  "_tab.h"
 #define OUTPUT_SUFFIX   "_tab.c"
 #define CODE_SUFFIX     "_code.c"
+#else /* !MSDOS */
+#define DEFINES_SUFFIX  ".tab.h"
+#define OUTPUT_SUFFIX   ".tab.c"
+#define CODE_SUFFIX     ".code.c"
+#endif /* MSDOS */
 #define VERBOSE_SUFFIX  ".output"
 
 /* keyword codes */

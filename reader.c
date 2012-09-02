@@ -84,22 +84,22 @@ char *get_line() {
 
     if (line) FREE(line);
     saw_eof = 1;
-    return line = cptr = 0; 
+    return line = cptr = 0;
   }
   if (line == 0 || linesize != (LINESIZE + 1)) {
     if (line) FREE(line);
     linesize = LINESIZE + 1;
-    if (!(line = MALLOC(linesize))) no_space(); 
+    if (!(line = MALLOC(linesize))) no_space();
   }
   ++lineno;
   while ((line[i] = c) != '\n') {
     if (++i + 1 >= linesize)
-      if (!(line = REALLOC(line, linesize += LINESIZE))) 
+      if (!(line = REALLOC(line, linesize += LINESIZE)))
 	no_space();
     if ((c = getc(f)) == EOF) {
       c = '\n';
-      saw_eof = 1; 
-    } 
+      saw_eof = 1;
+    }
   }
   line[i+1] = 0;
 
@@ -263,14 +263,14 @@ int nextc()
 }
 
 static struct keyword { char name[12]; int token; } keywords[] = {
-    { "binary", NONASSOC }, 
-    { "ident", IDENT }, 
+    { "binary", NONASSOC },
+    { "ident", IDENT },
     { "left", LEFT },
-    { "nonassoc", NONASSOC }, 
-    { "right", RIGHT }, 
+    { "nonassoc", NONASSOC },
+    { "right", RIGHT },
     { "start", START },
-    { "term", TOKEN }, 
-    { "token", TOKEN }, 
+    { "term", TOKEN },
+    { "token", TOKEN },
     { "type", TYPE },
     { "union", UNION },
 };
@@ -280,20 +280,20 @@ int keyword()
   register int	c;
   char		*t_cptr = cptr;
   struct keyword	*key;
-  
+
   c = *++cptr;
   if (isalpha(c)) {
     cinc = 0;
     while (isalnum(c) || c == '_' || c == '.' || c == '$') {
       cachec(tolower(c));
-      c = *++cptr; 
+      c = *++cptr;
     }
     cachec(NUL);
-    
+
     if ((key = bsearch(cache, keywords, sizeof(keywords)/sizeof(*key),
 		       sizeof(*key),
 		       (int (*)(const void *, const void *))strcmp)))
-      return key->token; 
+      return key->token;
   } else {
     ++cptr;
     if (c == '{') return (TEXT);
@@ -301,7 +301,7 @@ int keyword()
     if (c == '<') return (LEFT);
     if (c == '>') return (RIGHT);
     if (c == '0') return (TOKEN);
-    if (c == '2') return (NONASSOC); 
+    if (c == '2') return (NONASSOC);
   }
   syntax_error(lineno, line, t_cptr);
   /*NOTREACHED*/
@@ -441,15 +441,12 @@ void copy_union()
 
     if (unionized) over_unionized(cptr - 6);
     unionized = 1;
-
-    if (!lflag)
-	fprintf(text_file, line_format, lineno, (inc_file?inc_file_name:input_file_name));
-
     /* VM: Print to either code file or defines file but not to both */
     dc_file = dflag ? union_file : text_file;
-
-    fprintf(dc_file, "\ntypedef union");
-
+    fprintf(dc_file, "\n");
+    if (!lflag)
+	fprintf(dc_file, line_format, lineno, (inc_file?inc_file_name:input_file_name));
+    fprintf(dc_file, "typedef union");
     depth = 0;
 loop:
     c = *cptr++;
@@ -556,7 +553,7 @@ bucket *get_literal()
     n = cinc;
     s = MALLOC(n);
     if (s == 0) no_space();
-    
+
     for (i = 0; i < n; ++i)
 	s[i] = cache[i];
 
@@ -643,53 +640,53 @@ int get_number()
     return (n);
 }
 
-// 
+//
 // Date: Mon, 29 Jun 1998 16:36:47 +0200
 // From: Matthias Meixner <meixner@mes.th-darmstadt.de>
 // Organization: TH Darmstadt, Mikroelektronische Systeme
-// 
-// While using your version of BTYacc (V2.1), I have found a bug. 
+//
+// While using your version of BTYacc (V2.1), I have found a bug.
 // It does not correctly
 // handle typenames, if one typename is a prefix of another one and
-// if this type is used after the longer one. In this case BTYacc 
+// if this type is used after the longer one. In this case BTYacc
 // produces invalid code.
-// 
+//
 // e.g. in:
 // --------------------------------------------
 // %{
-//  
+//
 // #include <stdlib.h>
-//   
+//
 //    struct List {
 //       struct List *next;
 //       int foo;
 //    };
-//  
+//
 // %}
 // %union {
 //    struct List *fooList;
 //    int foo;
 // }
-//  
+//
 // %type <fooList> a
 // %type <foo> b
-//  
-// %token <foo> A 
-//  
+//
+// %token <foo> A
+//
 // %%
-//  
+//
 // a: b   {$$=malloc(sizeof(*$$));$$->next=NULL;$$->foo=$1;}
 //  | a b {$$=malloc(sizeof(*$$));$$->next=$1;$$->foo=$2;}
-//  
+//
 // b: A {$$=$1;}
-// 
+//
 static char *cache_tag(char *tag, int len)
 {
 int	i;
 char	*s;
 
     for (i = 0; i < ntags; ++i) {
-	if (strncmp(tag, tag_table[i], len) == 0 &&  
+	if (strncmp(tag, tag_table[i], len) == 0 &&
 	    // VM: this is bug fix proposed by Matthias Meixner
 	    tag_table[i][len]==0)
 	    return (tag_table[i]); }
@@ -1097,16 +1094,16 @@ bucket		**rhs;
 	  if (val <= 0) i = val - n;
 	  else if (val > maxoffset) {
 	    dollar_warning(rescan_lineno, val);
-	    i = val - maxoffset; 
+	    i = val - maxoffset;
 	  } else {
 	    i = offsets[val];
 	    if (!tag && !(tag = rhs[i]->tag) && havetags)
-	      untyped_rhs(val, rhs[i]->name); 
+	      untyped_rhs(val, rhs[i]->name);
 	  }
 	  msprintf(c, "yyvsp[%d]", i);
 	  if (tag) msprintf(c, ".%s", tag);
 	  else if (havetags)
-	    unknown_rhs(val); 
+	    unknown_rhs(val);
 	} else if (isalpha(*p) || *p == '_') {
 	  char	*arg;
 	  if (!(p = parse_id(p, &arg)))
@@ -1122,11 +1119,11 @@ bucket		**rhs;
 	  else if (havetags)
 	    error(rescan_lineno, 0, 0, "untyped argument $%s", arg); }
 	else
-	  dollar_error(rescan_lineno, 0, 0); 
+	  dollar_error(rescan_lineno, 0, 0);
       } else {
 	if (*p == '\n') rescan_lineno++;
-	mputc(c, *p++); 
-      } 
+	mputc(c, *p++);
+      }
     }
     *theptr = p;
     if (maxoffset > 0) FREE(offsets);
@@ -1828,7 +1825,7 @@ void pack_grammar()
 	  if (plhs[i]->argtags) {
 	    FREE(plhs[i]->argtags);
 	    plhs[i]->argtags = 0;
-	  } 
+	  }
 	}
 	rlhs[i] = plhs[i]->index;
 	rrhs[i] = j;
@@ -1881,6 +1878,9 @@ extern int read_errs;
 
 void reader() {
   write_section("banner");
+  if (dflag) {
+    fprintf(code_file, "#include \"%s\"\n\n", defines_file_name);
+    ++outline; }
   create_symbol_table();
   read_declarations();
   read_grammar();

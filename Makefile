@@ -79,7 +79,11 @@ zip:
 		mv btyacc.zip btyacc-$(VERSION).zip
 
 skeleton.c: btyaccpa.ske skel2c
-		awk -f skel2c btyaccpa.ske >skeleton.c
+		@echo "/*" >$@
+		@echo "** This file generated automatically from $<" >>$@
+		@echo "*/" >>$@
+		@echo >>$@
+		awk -f skel2c btyaccpa.ske >>$@
 
 etags TAGS:
 		etags *.c *.h
