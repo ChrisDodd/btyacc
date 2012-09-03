@@ -193,17 +193,15 @@ int yylex(void);
 
 static void YYSCopy(YYSTYPE *to, YYSTYPE *from, int size) {
   int i;                             
-  for (i = size-1; i >= 0; i--) {
+  for (i = size-1; i >= 0; i--)
     to[i] = from[i];
-  }
 }
 
 #ifdef YYPOSN
 static void YYPCopy(YYPOSN *to, YYPOSN *from, int size) {
   int i;                             
-  for (i = size-1; i >= 0; i--) {
+  for (i = size-1; i >= 0; i--)
     to[i] = from[i];
-  }
 }
 #endif /* YYPOSN */
 
@@ -211,50 +209,35 @@ static int yyexpand() {
   int p = yylvp-yylvals;
   int s = yylvlim-yylvals;
   s += YYSTACKGROWTH;
-  { Yshort  *tl = yylexemes; 
-    YYSTYPE *tv = yylvals;
-#ifdef YYPOSN
-    YYPOSN  *tp = yylpsns;
-#endif /* YYPOSN */
 #ifdef __cplusplus
-    yylvals = new YYSTYPE[s];
+  Yshort  *tl = yylexemes; 
+  yylexemes = new Yshort[s];
+  memcpy(yylexemes, tl, (s-YYSTACKGROWTH)*sizeof(Yshort));
+  delete[] tl;
+  YYSTYPE *tv = yylvals;
+  yylvals = new YYSTYPE[s];
+  YYSCopy(yylvals, tv, s-YYSTACKGROWTH);
+  delete[] tv;
 #ifdef YYPOSN
-    yylpsns = new YYPOSN[s];
-#endif /* YYPOSN */
-    yylexemes = new Yshort[s];
-#else
-    yylvals = malloc(sizeof(YYSTYPE) * s);
-#ifdef YYPOSN
-    yylpsns = malloc(sizeof(YYPOSN) * s);
-#endif /* YYPOSN */
-    yylexemes = malloc(sizeof(Yshort) * s);
-#endif
-    memcpy(yylexemes, tl, (s-YYSTACKGROWTH)*sizeof(Yshort));
-    YYSCopy(yylvals, tv, s-YYSTACKGROWTH);
-#ifdef YYPOSN
-    YYPCopy(yylpsns, tp, s-YYSTACKGROWTH);
-#endif /* YYPOSN */
-#ifdef __cplusplus
-    delete[] tl;
-    delete[] tv;
-#ifdef YYPOSN
-    delete[] tp;
+  YYPOSN  *tp = yylpsns;
+  yylpsns = new YYPOSN[s];
+  YYPCopy(yylpsns, tp, s-YYSTACKGROWTH);
+  delete[] tp;
 #endif /* YYPOSN */
 #else
-    free(tl);
-    free(tv);
+  yylexemes = realloc(yylexemes, sizeof(Yshort) * s);
+  yylvals = realloc(yylvals, sizeof(YYSTYPE) * s);
 #ifdef YYPOSN
-    free(tp);
+  yylpsns = realloc(yylpsns, sizeof(YYPOSN) * s);
 #endif /* YYPOSN */
 #endif
-  }
+  yylexp = yylexemes + p;
   yylvp = yylve = yylvals + p;
   yylvlim = yylvals + s;
 #ifdef YYPOSN
   yylpp = yylpe = yylpsns + p;
   yylplim = yylpsns + s;
 #endif /* YYPOSN */
-  yylexp = yylexemes + p;
   return 0;
 }
 
@@ -469,12 +452,10 @@ int yyparse() {
       save->errflag = yyps->errflag;
       save->ssp     = save->ss + (yyps->ssp - yyps->ss);
       save->vsp     = save->vs + (yyps->vsp - yyps->vs);
-#ifdef YYPOSN
-      save->psp     = save->ps + (yyps->psp - yyps->ps);
-#endif /* YYPOSN */
       memcpy (save->ss, yyps->ss, (yyps->ssp - yyps->ss + 1)*sizeof(Yshort));
       YYSCopy(save->vs, yyps->vs, (yyps->ssp - yyps->ss + 1));
 #ifdef YYPOSN
+      save->psp     = save->ps + (yyps->psp - yyps->ps);
       YYPCopy(save->ps, yyps->ps, (yyps->ssp - yyps->ss + 1));
 #endif /* YYPOSN */
       ctry = yytable[yyn];
@@ -621,30 +602,24 @@ yyerrhandler:
       yyerrctx->errflag = yyps->errflag;
       yyerrctx->ssp = yyerrctx->ss + (yyps->ssp - yyps->ss);
       yyerrctx->vsp = yyerrctx->vs + (yyps->vsp - yyps->vs);
-#ifdef YYPOSN
-      yyerrctx->psp = yyerrctx->ps + (yyps->psp - yyps->ps);
-#endif /* YYPOSN */
-      memcpy (yyerrctx->ss, yyps->ss, (yyps->ssp - yyps->ss + 1)*sizeof(Yshort));
+      memcpy(yyerrctx->ss, yyps->ss, (yyps->ssp - yyps->ss + 1)*sizeof(Yshort));
       YYSCopy(yyerrctx->vs, yyps->vs, (yyps->ssp - yyps->ss + 1));
 #ifdef YYPOSN
+      yyerrctx->psp = yyerrctx->ps + (yyps->psp - yyps->ps);
       YYPCopy(yyerrctx->ps, yyps->ps, (yyps->ssp - yyps->ss + 1));
 #endif /* YYPOSN */
       yyerrctx->lexeme = yylvp - yylvals;
     }
-    yylvp  = yylvals   + save->lexeme;
-#ifdef YYPOSN
-    yylpp  = yylpsns   + save->lexeme;
-#endif /* YYPOSN */
-    yylexp = yylexemes + save->lexeme;
     yychar = -1;
+    yylexp = yylexemes + save->lexeme;
     yyps->ssp = yyps->ss + (save->ssp - save->ss);
-    yyps->vsp = yyps->vs + (save->vsp - save->vs);
-#ifdef YYPOSN
-    yyps->psp = yyps->ps + (save->psp - save->ps);
-#endif /* YYPOSN */
     memcpy (yyps->ss, save->ss, (yyps->ssp - yyps->ss + 1) * sizeof(Yshort));
+    yylvp = yylvals + save->lexeme;
+    yyps->vsp = yyps->vs + (save->vsp - save->vs);
     YYSCopy(yyps->vs, save->vs,  yyps->vsp - yyps->vs + 1);
 #ifdef YYPOSN
+    yylpp  = yylpsns + save->lexeme;
+    yyps->psp = yyps->ps + (save->psp - save->ps);
     YYPCopy(yyps->ps, save->ps,  yyps->psp - yyps->ps + 1);
 #endif /* YYPOSN */
     ctry = ++save->ctry;
@@ -666,24 +641,18 @@ yyerrhandler:
       }
 #endif
       // Restore state as it was in the most forward-advanced error
-      yylvp  = yylvals   + yyerrctx->lexeme;
-#ifdef YYPOSN
-      yylpp  = yylpsns   + yyerrctx->lexeme;
-#endif /* YYPOSN */
       yylexp = yylexemes + yyerrctx->lexeme;
       yychar = yylexp[-1];
-      yylval = yylvp[-1];
-#ifdef YYPOSN
-      yyposn = yylpp[-1];
-#endif /* YYPOSN */
       yyps->ssp = yyps->ss + (yyerrctx->ssp - yyerrctx->ss);
+      memcpy(yyps->ss, yyerrctx->ss, (yyps->ssp - yyps->ss + 1)*sizeof(Yshort));
+      yylvp = yylvals   + yyerrctx->lexeme;
+      yylval = yylvp[-1];
       yyps->vsp = yyps->vs + (yyerrctx->vsp - yyerrctx->vs);
-#ifdef YYPOSN
-      yyps->psp = yyps->ps + (yyerrctx->psp - yyerrctx->ps);
-#endif /* YYPOSN */
-      memcpy (yyps->ss, yyerrctx->ss, (yyps->ssp - yyps->ss + 1) * sizeof(Yshort));
       YYSCopy(yyps->vs, yyerrctx->vs,  yyps->vsp - yyps->vs + 1);
 #ifdef YYPOSN
+      yylpp  = yylpsns   + yyerrctx->lexeme;
+      yyposn = yylpp[-1];
+      yyps->psp = yyps->ps + (yyerrctx->psp - yyerrctx->ps);
       YYPCopy(yyps->ps, yyerrctx->ps,  yyps->psp - yyps->ps + 1);
 #endif /* YYPOSN */
       yystate = yyerrctx->state;
@@ -788,13 +757,13 @@ yyreduce:
 
 #ifdef YYPOSN
   /* default reduced position is NULL -- no position at all.
-     no position will be assigned at trial time and if no position handling is present */
+     no position will be assigned at trial time and if no position handling
+     is present */
   memset(&yyps->pos, 0, sizeof(yyps->pos));
-#endif /* YYPOSN */
-
 #ifdef YYREDUCEPOSNFUNC
   reduce_posn = 1;
 #endif /* YYREDUCEPOSNFUNC */
+#endif /* YYPOSN */
 
   switch (yyn) {
 
@@ -812,12 +781,14 @@ yyreduce:
   }
 #endif
 
+#ifdef YYPOSN
   // Perform user-defined position reduction
 #ifdef YYREDUCEPOSNFUNC
   if(!yytrial) {
     YYCALLREDUCEPOSN(YYREDUCEPOSNFUNCARG);
   }
 #endif
+#endif /* YYPOSN */
 
   yyps->ssp -= yym;
   yystate = *(yyps->ssp);
@@ -906,23 +877,18 @@ yyvalid:
   }
   yychar = -1;
   yyps->ssp = yyps->ss + (yypath->ssp - yypath->ss);
-  yyps->vsp = yyps->vs + (yypath->vsp - yypath->vs);
-#ifdef YYPOSN
-  yyps->psp = yyps->ps + (yypath->psp - yypath->ps);
-#endif /* YYPOSN */
   memcpy (yyps->ss, yypath->ss, (yyps->ssp - yyps->ss + 1) * sizeof(Yshort));
+  yylexp = yylexemes + yypath->lexeme;
+  yyps->vsp = yyps->vs + (yypath->vsp - yypath->vs);
   YYSCopy(yyps->vs, yypath->vs,  yyps->vsp - yyps->vs + 1);
-#ifdef YYPOSN
-  YYPCopy(yyps->ps, yypath->ps,  yyps->psp - yyps->ps + 1);
-#endif /* YYPOSN */
   yylvp = yylvals + yypath->lexeme;
 #ifdef YYPOSN
+  yyps->psp = yyps->ps + (yypath->psp - yypath->ps);
+  YYPCopy(yyps->ps, yypath->ps,  yyps->psp - yyps->ps + 1);
   yylpp = yylpsns + yypath->lexeme;
 #endif /* YYPOSN */
-  yylexp = yylexemes + yypath->lexeme;
   yystate = yypath->state;
   goto yyloop;
-
 
 yyabort:
   if(yyerrctx) {
