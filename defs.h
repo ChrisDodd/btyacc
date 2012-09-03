@@ -346,6 +346,8 @@ void unterminated_arglist(int, char *, char *);
 void bad_formals(void);
 void dollar_warning(int, int);
 void dollar_error(int, char *, char *);
+void at_warning(int, int);
+void at_error(int, char *, char *);
 void untyped_lhs(void);
 void untyped_rhs(int, char *);
 void unknown_rhs(int);

@@ -1120,6 +1120,21 @@ bucket		**rhs;
 	    error(rescan_lineno, 0, 0, "untyped argument $%s", arg); }
 	else
 	  dollar_error(rescan_lineno, 0, 0);
+      } else if (*p == '@') {
+	if (isdigit(*p) || *p == '-') {
+	  int val;
+	  if (!(p = parse_int(p, &val)))
+	    at_error(rescan_lineno, 0, 0);
+	  if (val <= 0) i = val - n;
+	  else if (val > maxoffset) {
+	    at_warning(rescan_lineno, val);
+	    i = val - maxoffset;
+	  } else {
+	    i = offsets[val];
+	  }
+	  msprintf(c, "yypsp[%d]", i);
+	} else
+	  at_error(rescan_lineno, 0, 0);
       } else {
 	if (*p == '\n') rescan_lineno++;
 	mputc(c, *p++);
@@ -1492,6 +1507,25 @@ loop:
 	    if (tag) fprintf(f, ".%s", tag);
 	    else if (havetags)
 		error(lineno, 0, 0, "untyped argument $%s", arg);
+	    goto loop; }
+    } else if (c == '@') {
+	if (cptr[1] == '@') {
+	    fprintf(f, "yypos");
+	    cptr += 2;
+	    goto loop; }
+	else if (isdigit(cptr[1])) {
+	    ++cptr;
+	    i = get_number();
+	    if (i > n) {
+		at_warning(lineno, i);
+		fprintf(f, "yypsp[%d]", i - maxoffset); }
+	    else
+		fprintf(f, "yypsp[%d]", offsets[i]);
+	    goto loop; }
+	else if (cptr[1] == '-') {
+	    cptr += 2;
+	    i = get_number();
+	    fprintf(f, "yypsp[%d]", -i - n);
 	    goto loop; } }
     if (isalpha(c) || c == '_' || c == '$') {
 	do {

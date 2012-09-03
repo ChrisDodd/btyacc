@@ -193,6 +193,17 @@ void dollar_error(int lineno, char *line, char *cptr) {
   error(lineno, line, cptr, "illegal $-name");
 }
 
+void at_warning(int a_lineno, int i) {
+  int slineno = lineno;
+  lineno = a_lineno;
+  FileError("@%d references beyond the end of the current rule", i);
+  lineno = slineno;
+}
+
+void at_error(int lineno, char *line, char *cptr) {
+  error(lineno, line, cptr, "illegal @-name");
+}
+
 void untyped_lhs() {
   error(lineno, 0, 0, "$$ is untyped");
 }
