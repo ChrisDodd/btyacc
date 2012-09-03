@@ -1878,9 +1878,8 @@ extern int read_errs;
 
 void reader() {
   write_section("banner");
-  if (dflag) {
-    fprintf(code_file, "#include \"%s\"\n\n", defines_file_name);
-    ++outline; }
+  if (dflag)
+    fprintf(text_file, "#include \"%s\"\n\n", defines_file_name);
   create_symbol_table();
   read_declarations();
   read_grammar();
