@@ -62,6 +62,12 @@ struct mstring *msnew(void) {
     return n;
 }
 
+void mstrim(struct mstring *s, const char *trim)
+{
+    while (s && s->ptr > s->base && strchr(trim, s->ptr[-1]))
+	s->ptr--;
+}
+
 char *msdone(struct mstring *s)
 {
 char	*r = 0;

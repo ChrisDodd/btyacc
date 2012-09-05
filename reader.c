@@ -18,7 +18,7 @@ int cinc, cache_size;
 int ntags, tagmax, havetags=0;
 char **tag_table;
 
-char saw_eof, unionized;
+char saw_eof, unionized, location_defined;
 char *cptr, *line;
 int linesize;
 
@@ -264,9 +264,12 @@ int nextc()
 
 static struct keyword { char name[12]; int token; } keywords[] = {
     { "binary", NONASSOC },
+    { "destructor", DESTRUCTOR },
     { "ident", IDENT },
     { "left", LEFT },
+    { "location", LOCATION },
     { "nonassoc", NONASSOC },
+    { "position", LOCATION },
     { "right", RIGHT },
     { "start", START },
     { "term", TOKEN },
@@ -302,6 +305,8 @@ int keyword()
     if (c == '>') return (RIGHT);
     if (c == '0') return (TOKEN);
     if (c == '2') return (NONASSOC);
+    if (c == '@') return (LOCATION);
+    if (c == '$') return (UNION);
   }
   syntax_error(lineno, line, t_cptr);
   /*NOTREACHED*/
@@ -430,7 +435,7 @@ loop:
 	goto loop; }
 }
 
-void copy_union()
+void copy_structdecl(const char *kind, const char *name)
 {
     FILE *dc_file;
     register int c;
@@ -439,14 +444,12 @@ void copy_union()
     char *u_line = dup_line();
     char *u_cptr = u_line + (cptr - line - 6);
 
-    if (unionized) over_unionized(cptr - 6);
-    unionized = 1;
     /* VM: Print to either code file or defines file but not to both */
     dc_file = dflag ? union_file : text_file;
     fprintf(dc_file, "\n");
     if (!lflag)
 	fprintf(dc_file, line_format, lineno, (inc_file?inc_file_name:input_file_name));
-    fprintf(dc_file, "typedef union");
+    fprintf(dc_file, "typedef %s", kind);
     depth = 0;
 loop:
     c = *cptr++;
@@ -461,9 +464,9 @@ loop:
       goto loop;
     case '}':
       if (--depth == 0) {
-	fprintf(dc_file, " YYSTYPE;\n");
+	fprintf(dc_file, " %s;\n", name);
 	FREE(u_line);
-	return; }
+	break; }
       goto loop;
     case '\'':
     case '"':
@@ -475,6 +478,7 @@ loop:
     default:
       goto loop;
     }
+    fprintf(dc_file, "#define %s %s\n", name, name);
 }
 
 int hexval(int c)
@@ -844,6 +848,10 @@ void declare_types()
 	    bp->tag = tag; } }
 }
 
+void declare_destructor()
+{
+}
+
 void declare_start()
 {
     register int c;
@@ -883,7 +891,9 @@ void read_declarations()
 	    copy_text();
 	    break;
 	case UNION:
-	    copy_union();
+	    if (unionized) over_unionized(cptr - 6);
+	    unionized = 1;
+	    copy_structdecl("union", "YYSTYPE");
 	    break;
 	case TOKEN:
 	case LEFT:
@@ -893,6 +903,14 @@ void read_declarations()
 	    break;
 	case TYPE:
 	    declare_types();
+	    break;
+	case DESTRUCTOR:
+	    declare_destructor();
+	    break;
+	case LOCATION:
+	    if (location_defined) repeat_location_defined(cptr - 9);
+	    location_defined = 1;
+	    copy_structdecl("struct", "YYPOSN");
 	    break;
 	case START:
 	    declare_start();
@@ -959,14 +977,30 @@ char		quote = 0;
 int		a_lineno = lineno;
 char		*a_line = dup_line();
 char		*a_cptr = a_line + (cptr - line - 1);
+int		skipspace = 1;
 
     rescan_lineno = lineno;
     while ((c = *cptr++) != ')' || depth || quote) {
 	if (c == ',' && !quote && !depth) {
 	    len++;
+	    mstrim(s, " ");
 	    mputc(s, 0);
+	    skipspace = 1;
 	    continue; }
-	mputc(s, c);
+	if (!quote && c == '/' && (*cptr == '/' || *cptr == '*')) {
+	    if (*cptr == '/') {
+		c = '\n';
+	    } else {
+		cptr--;
+		skip_comment();
+		c = ' '; } }
+	if (!quote && isspace(c)) {
+	    if (!skipspace) {
+		mputc(s, ' ');
+		skipspace = 1; }
+	} else {
+	    mputc(s, c);
+	    skipspace = 0; }
 	if (c == '\n') {
 	    get_line();
 	    if (!line) {
@@ -984,6 +1018,7 @@ char		*a_cptr = a_line + (cptr - line - 1);
 	    else if (c == '\"' || c == '\'') quote = c; } }
     if (alen) *alen = len;
     FREE(a_line);
+    mstrim(s, " ");
     return msdone(s);
 }
 
@@ -1064,6 +1099,10 @@ int		i, j, n;
 Yshort		*offsets=0, maxoffset;
 bucket		**rhs;
 
+    /* FIXME -- the argument offset table is computed independently in
+     * FIXME -- several places (compile_arg, copy_action, and can_elide_arg)
+     * FIXME -- those multiple implementations should be factored into
+     * FIXME -- a single function. */
     maxoffset = n = 0;
     for (i = nitems - 1; pitem[i]; --i) {
 	n++;
@@ -1143,6 +1182,68 @@ bucket		**rhs;
     *theptr = p;
     if (maxoffset > 0) FREE(offsets);
     return msdone(c);
+}
+
+static int can_elide_arg(char **theptr, char *yyvaltag)
+{
+char		*p = *theptr;
+int		rv = 0;
+int		i, j, n=0;
+Yshort		*offsets=0, maxoffset=0;
+bucket		**rhs;
+char		*tag = 0;
+
+    if (*p++ != '$') return 0;
+    if (*p == '<') {
+      if (!(p = parse_id(++p, &tag)) || *p++ != '>')
+	return 0; }
+    /* FIXME -- the argument offset table is computed independently in
+     * FIXME -- several places (compile_arg, copy_action, and can_elide_arg)
+     * FIXME -- those multiple implementations should be factored into
+     * FIXME -- a single function. */
+    for (i = nitems - 1; pitem[i]; --i) {
+	n++;
+	if (pitem[i]->class != ARGUMENT)
+	    maxoffset++; }
+    if (maxoffset > 0) {
+	offsets = NEW2(maxoffset+1, Yshort);
+	if (offsets == 0) no_space(); }
+    for (j=0, i++; i<nitems; i++)
+	if (pitem[i]->class != ARGUMENT)
+	    offsets[++j] = i - nitems + 1;
+    rhs = pitem + nitems - 1;
+    if (isdigit(*p) || *p == '-') {
+      int val;
+      if (!(p = parse_int(p, &val)))
+	rv = 0;
+      else {
+	if (val <= 0)
+	  rv = 1 - val + n;
+	else if (val > maxoffset)
+	  rv = 0;
+	else {
+	  i = offsets[val];
+	  rv = 1 - i;
+	  if (!tag) tag = rhs[i]->tag; } }
+    } else if (isalpha(*p) || *p == '_') {
+      char	*arg;
+      if (!(p = parse_id(p, &arg)))
+	return 0;
+      for (i=plhs[nrules]->args-1; i>=0; i--)
+	if (arg == plhs[nrules]->argnames[i]) break;
+      if (i>=0) {
+	if (!tag)
+	  tag = plhs[nrules]->argtags[i];
+	rv = plhs[nrules]->args + n - i; } }
+    if (tag && yyvaltag) {
+      if (strcmp(tag, yyvaltag)) rv = 0;
+    } else if (tag || yyvaltag)
+      rv = 0;
+    if (maxoffset > 0) FREE(offsets);
+    if (*p || rv <= 0)
+      return 0;
+    *theptr = p+1;
+    return rv;
 }
 
 #define ARG_CACHE_SIZE	1024
@@ -1365,12 +1466,25 @@ void add_symbol()
 	error(lineno, line, cptr, "wrong number of arguments for %s",
 				  bp->name);
     if (args != 0) {
-	char	*ap;
 	int	i;
-	for (ap=args, i=0; i<argslen; i++)
+	char	*ap = args;
+	int	elide_cnt = can_elide_arg(&ap, bp->argtags[0]);
+
+	if (elide_cnt > argslen)
+	  elide_cnt = 0;
+	if (elide_cnt) {
+	  for (i=1; i<elide_cnt; i++)
+	    if (can_elide_arg(&ap, bp->argtags[i]) != elide_cnt-i) {
+	      elide_cnt = 0;
+	      break; } }
+	if (elide_cnt) {
+	  assert(i == elide_cnt);
+	} else {
+	  ap = args;
+	  i = 0; }
+	for (; i<argslen; i++)
 	    ap = insert_arg_rule(ap, bp->argtags[i]);
 	free(args); }
-
     if (++nitems > maxitems)
 	expand_items();
     pitem[nitems-1] = bp;
@@ -1404,6 +1518,10 @@ void copy_action()
 	fprintf(f, line_format, lineno, (inc_file?inc_file_name:input_file_name));
     if (*cptr == '=') ++cptr;
 
+    /* FIXME -- the argument offset table is computed independently in
+     * FIXME -- several places (compile_arg, copy_action, and can_elide_arg)
+     * FIXME -- those multiple implementations should be factored into
+     * FIXME -- a single function. */
     maxoffset = n = 0;
     for (i = nitems - 1; pitem[i]; --i) {
 	n++;
@@ -1509,7 +1627,7 @@ loop:
 		error(lineno, 0, 0, "untyped argument $%s", arg);
 	    goto loop; }
     } else if (c == '@') {
-	if (cptr[1] == '@') {
+	if (cptr[1] == '@' || cptr[1] == '$') {
 	    fprintf(f, "yypos");
 	    cptr += 2;
 	    goto loop; }

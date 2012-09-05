@@ -82,6 +82,8 @@ typedef int Yshort;
 #define START 7
 #define UNION 8
 #define IDENT 9
+#define DESTRUCTOR 10
+#define LOCATION 11
 
 
 /*  symbol classes  */
@@ -257,6 +259,7 @@ extern int nvars;
 extern int ntags;
 
 extern char unionized;
+extern char location_defined;
 extern char line_format[];
 
 extern int   start_symbol;
@@ -329,6 +332,7 @@ void unterminated_string(int, char *, char *);
 void unterminated_text(int, char *, char *);
 void unterminated_union(int, char *, char *);
 void over_unionized(char *);
+void repeat_location_defined(char *);
 void illegal_tag(int, char *, char *);
 void illegal_character(char *);
 void used_reserved(char *);
@@ -465,13 +469,14 @@ void copy_ident(void);
 void copy_string(int, FILE *, FILE *);
 void copy_comment(FILE *, FILE *);
 void copy_text(void);
-void copy_union(void);
+void copy_structdecl(const char *, const char *);
 int hexval(int);
 bucket *get_literal(void);
 int is_reserved(char *);
 bucket *get_name(void);
 int get_number(void);
 char *get_tag(void);
+void declare_destructor(void);
 void declare_tokens(int);
 void declare_types(void);
 void declare_start(void);

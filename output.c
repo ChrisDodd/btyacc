@@ -852,7 +852,7 @@ void output_defines()
     ++outline;
     fprintf(dc_file, "#define YYERRCODE %d\n", symbol_value[1]);
 
-    if (dflag && unionized)
+    if (dflag && (unionized || location_defined))
     {
 	fclose(union_file);
 	union_file = fopen(union_file_name, "r");
@@ -860,7 +860,10 @@ void output_defines()
 	while ((c = getc(union_file)) != EOF) {
 	  putc(c, defines_file);
 	}
-	fprintf(defines_file, "extern YYSTYPE yylval;\n");
+	if (unionized)
+	    fprintf(defines_file, "extern YYSTYPE yylval;\n");
+	if (location_defined)
+	    fprintf(defines_file, "extern YYPOSN yyposn;\n");
     }
 
     if(dflag) {

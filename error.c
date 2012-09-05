@@ -119,6 +119,11 @@ void over_unionized(char *cptr) {
   exit(1);
 }
 
+void repeat_location_defined(char *cptr) {
+  error(lineno, line, cptr, "too many %%location declarations");
+  exit(1);
+}
+
 void illegal_tag(int lineno, char *line, char *cptr) {
   error(lineno, line, cptr, "illegal tag");
 }
