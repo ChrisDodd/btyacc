@@ -21,19 +21,21 @@ LINKER	      = gcc
 
 MAKEFILE      = Makefile
 
-OBJS	      = closure.o error.o lalr.o lr0.o main.o mkpar.o output.o	\
-		mstring.o reader.o readskel.o skeleton.o symtab.o verbose.o warshall.o
+OBJS	      = closure.o dtor.o error.o lalr.o lr0.o main.o mkpar.o	\
+		output.o mstring.o reader.o readskel.o skeleton.o	\
+		symtab.o verbose.o warshall.o
 
 PRINT	      = pr -f -l88
 
 PROGRAM	      = btyacc
 
-SRCS	      = closure.c error.c lalr.c lr0.c main.c mkpar.c output.c	\
-		mstring.c reader.c readskel.c skeleton.c symtab.c verbose.c warshall.c
+SRCS	      = closure.c dtor.c error.c lalr.c lr0.c main.c mkpar.c	\
+		output.c mstring.c reader.c readskel.c skeleton.c	\
+		symtab.c verbose.c warshall.c
 
 OTHERS	      = README README.BYACC \
-		Makefile btyaccpa.ske push.skel empty.y skel2c manpage makefile.dos \
-		skeleton.c
+		Makefile btyaccpa.ske push.skel empty.y skel2c manpage	\
+		makefile.dos skeleton.c
 
 all:		$(PROGRAM)
 

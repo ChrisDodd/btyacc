@@ -39,6 +39,8 @@ extern _C_ Yshort yygindex[];
 extern _C_ Yshort yytable[];
 extern _C_ Yshort yycheck[];
 extern _C_ Yshort yyctable[];
+extern _C_ Yshort yyastable[];
+extern _C_ Yshort yyttable[];
 
 #if YYDEBUG
 extern _C_ char *yyname[];
@@ -698,6 +700,9 @@ yyerrhandler:
 	if(!yytrial) {
 	  YYDELETEVAL(yyps->vsp[0],1);
 	  YYDELETEPOSN(yyps->psp[0],1);
+#ifdef YYDESTRUCT
+	  YYDESTRUCT(yyastable[yyps->ssp[0]], yyps->vsp, yyps->psp);
+#endif /* YYDESTRUCT */
 	}
         --(yyps->ssp);
         --(yyps->vsp);
@@ -720,6 +725,10 @@ yyerrhandler:
     if(!yytrial) {
       YYDELETEVAL(yylval,0);
       YYDELETEPOSN(yyposn,0);
+#ifdef YYDESTRUCT
+      if (yychar > 0)
+        YYDESTRUCT(yyastable[yyttable[yychar]], &yylval, &yyposn);
+#endif /* YYDESTRUCT */
     }
     yychar = (-1);
     goto yyloop;
@@ -896,12 +905,20 @@ yyabort:
   }
 
   YYSTYPE *pv;
+#ifdef YYPOSN
+  YYPOSN *pp = yyps->ps;
+#endif
+#ifdef YYDESTRUCT
+  Yshort *ps = yyps->ss;
+#endif
   for(pv=yyps->vs; pv<yyps->vsp; pv++) {
     YYDELETEVAL(*pv,2);
+#if defined(YYDESTRUCT)
+    YYDESTRUCT(yyastable[*ps++], pv, pp++);
+#endif /* YYDESTRUCT */
   }
 
 #ifdef YYPOSN
-  YYPOSN *pp;
   for(pp=yyps->ps; pp<yyps->psp; pp++) {
     YYDELETEPOSN(*pp,2);
   }

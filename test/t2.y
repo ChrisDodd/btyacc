@@ -11,7 +11,7 @@
 
 %location {
     struct {
-	int	line, column
+	int	line, column;
     }		start, end;
 }
 
@@ -45,7 +45,7 @@
     struct Scope *start_fn_def(struct Scope *, struct Decl *);
     struct Type *type_combine(struct Type *, struct Type *);
     struct Expr *var_expr(struct Scope *, const char *);
-
+    void free_expr(struct Expr *);
 %}
 
 %left '+' '-'
@@ -67,6 +67,9 @@
 		cv_quals cv_qual
 %type <scope>	opt_scope(<scope>)
 %type <dlist>	formal_arg_list(<scope>) nonempty_formal_arg_list(<scope>)
+
+%destructor { free_expr($$); } <expr>
+%destructor { free($$); } <elist,dlist> CONSTANT
 
 %start input
 

@@ -137,7 +137,6 @@ void output_actions()
     FREE(lookaheads);
     FREE(LA);
     FREE(LAruleno);
-    FREE(accessing_symbol);
 
     goto_actions();
     FREE(goto_map + ntokens);
@@ -150,6 +149,8 @@ void output_actions()
     output_table();
     output_check();
     output_ctable();
+    output_astable();
+    FREE(accessing_symbol);
 }
 
 int find_conflict_base(int cbase)
@@ -771,6 +772,35 @@ void output_ctable()
 	FREE(conflicts);
 }
 
+void output_astable()
+{
+    register int i;
+    register int j;
+
+    if (!rflag)
+	fprintf(output_file, "#ifdef YYDESTRUCT\nstatic ");
+    fprintf(output_file, "int yyastable[] = {%39d,", accessing_symbol ?
+	    accessing_symbol[0] : 0);
+
+    j = 10;
+    for (i = 1; i < nstates; i++)
+    {
+	if (j >= 10)
+	{
+	    if (!rflag) ++outline;
+	    putc('\n', output_file);
+	    j = 1;
+	}
+	else
+	    ++j;
+
+	fprintf(output_file, "%5d,", accessing_symbol[i]);
+    }
+    if (!rflag) outline += 2;
+    fprintf(output_file, "\n};\n");
+    if (!rflag)
+	fprintf(output_file, "#endif /* YYDESTRUCT */\n");
+}
 
 int is_C_identifier(char *name)
 {
@@ -862,12 +892,13 @@ void output_defines()
 	}
 	if (unionized)
 	    fprintf(defines_file, "extern YYSTYPE yylval;\n");
-	if (location_defined)
-	    fprintf(defines_file, "extern YYPOSN yyposn;\n");
     }
 
     if(dflag) {
-      fprintf(defines_file, "\n#endif\n");
+	fprintf(defines_file, "#if defined(YYPOSN)\n"
+			      "extern YYPOSN yyposn;\n"
+			      "#endif\n");
+	fprintf(defines_file, "\n#endif\n");
     }
 }
 
@@ -1127,7 +1158,7 @@ void output_debug()
 
 void output_stype()
 {
-    if (!unionized && ntags == 0)
+    if (!unionized && !havetags)
     {
 	outline += 3;
 	fprintf(code_file, "#ifndef YYSTYPE\ntypedef int YYSTYPE;\n#endif\n");

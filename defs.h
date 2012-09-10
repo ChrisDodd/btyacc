@@ -138,9 +138,10 @@ struct bucket
     struct bucket *link;
     struct bucket *next;
     char *name;
-    char *tag;
+    struct union_tag *tag;
     char **argnames;
     char **argtags;
+    struct destructor *dtor;
     Yshort args;
     Yshort value;
     Yshort index;
@@ -149,6 +150,13 @@ struct bucket
     char assoc;
 };
 
+typedef struct union_tag union_tag;
+struct union_tag
+{
+    struct union_tag	*next;
+    char		*name;
+    struct destructor	*dtor;
+};
 
 /*  the structure of the LR(0) state machine  */
 
@@ -201,6 +209,21 @@ struct action
     char   assoc;
     char   suppressed;
 };
+
+typedef struct destructor destructor;
+struct destructor
+{
+    destructor	*next;
+    char	*code;
+    struct {
+	union_tag	*tag;
+	int		*syms;
+	int		num_syms, max_syms;
+    } *tags;
+    int			num_tags, max_tags;
+};
+
+extern destructor	*destructors, *default_destructor;
 
 struct section {
     char   *name;
@@ -256,7 +279,7 @@ extern int nrules;
 extern int nsyms;
 extern int ntokens;
 extern int nvars;
-extern int ntags;
+extern int havetags;
 
 extern char unionized;
 extern char location_defined;
@@ -318,6 +341,12 @@ void finalize_closure(void);
 void print_closure(int);
 void print_EFF(void);
 void print_first_derives(void);
+
+/* dtor.c */
+void declare_destructor(void);
+void free_destructors(void);
+void add_destructor_symbol(destructor *d, int state, union_tag *tag);
+void gen_yydestruct(void);
 
 /* error.c */
 void fatal(char *);
@@ -445,6 +474,7 @@ void output_base(void);
 void output_table(void);
 void output_check(void);
 void output_ctable(void);
+void output_astable(void);
 int is_C_identifier(char *);
 void output_defines(void);
 void output_stored_text(void);
@@ -475,8 +505,7 @@ bucket *get_literal(void);
 int is_reserved(char *);
 bucket *get_name(void);
 int get_number(void);
-char *get_tag(void);
-void declare_destructor(void);
+union_tag *get_tag(int);
 void declare_tokens(int);
 void declare_types(void);
 void declare_start(void);

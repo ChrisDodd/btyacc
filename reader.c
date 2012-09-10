@@ -15,8 +15,8 @@
 char *cache;
 int cinc, cache_size;
 
-int ntags, tagmax, havetags=0;
-char **tag_table;
+int havetags=0;
+static union_tag *tag_table = 0;
 
 char saw_eof, unionized, location_defined;
 char *cptr, *line;
@@ -644,102 +644,48 @@ int get_number()
     return (n);
 }
 
-//
-// Date: Mon, 29 Jun 1998 16:36:47 +0200
-// From: Matthias Meixner <meixner@mes.th-darmstadt.de>
-// Organization: TH Darmstadt, Mikroelektronische Systeme
-//
-// While using your version of BTYacc (V2.1), I have found a bug.
-// It does not correctly
-// handle typenames, if one typename is a prefix of another one and
-// if this type is used after the longer one. In this case BTYacc
-// produces invalid code.
-//
-// e.g. in:
-// --------------------------------------------
-// %{
-//
-// #include <stdlib.h>
-//
-//    struct List {
-//       struct List *next;
-//       int foo;
-//    };
-//
-// %}
-// %union {
-//    struct List *fooList;
-//    int foo;
-// }
-//
-// %type <fooList> a
-// %type <foo> b
-//
-// %token <foo> A
-//
-// %%
-//
-// a: b   {$$=malloc(sizeof(*$$));$$->next=NULL;$$->foo=$1;}
-//  | a b {$$=malloc(sizeof(*$$));$$->next=$1;$$->foo=$2;}
-//
-// b: A {$$=$1;}
-//
-static char *cache_tag(char *tag, int len)
+static union_tag *cache_tag(char *tag, int len)
 {
-int	i;
-char	*s;
+union_tag	**p, *rv;
 
-    for (i = 0; i < ntags; ++i) {
-	if (strncmp(tag, tag_table[i], len) == 0 &&
-	    // VM: this is bug fix proposed by Matthias Meixner
-	    tag_table[i][len]==0)
-	    return (tag_table[i]); }
-    if (ntags >= tagmax) {
-	tagmax += 16;
-	tag_table = tag_table ? RENEW(tag_table, tagmax, char *)
-			      : NEW2(tagmax, char *);
-	if (tag_table == 0) no_space(); }
-    s = MALLOC(len + 1);
-    if (s == 0) no_space();
-    strncpy(s, tag, len);
-    s[len] = 0;
-    tag_table[ntags++] = s;
-    return s;
+    for (p = &tag_table; *p; p = &(*p)->next) {
+	if (strncmp(tag, (*p)->name, len) == 0 && (*p)->name[len] == 0)
+	    return *p; }
+    if (!(*p = rv = NEW(union_tag))) no_space();
+    if (!(rv->name = MALLOC(len + 1))) no_space();
+    rv->next = 0;
+    strncpy(rv->name, tag, len);
+    rv->name[len] = 0;
+    rv->dtor = 0;
+    return rv;
 }
 
-char *get_tag()
+union_tag *get_tag(int braces)
 {
-    register int c;
+    register int c = *cptr;
     int t_lineno = lineno;
     char *t_line = dup_line();
     char *t_cptr = t_line + (cptr - line);
 
-    ++cptr;
-    c = nextc();
-    if (c == EOF) unexpected_EOF();
+    if (braces) {
+	if (c != '<')
+	    illegal_tag(t_lineno, t_line, t_cptr);
+	++cptr;
+	c = nextc();
+	if (c == EOF) unexpected_EOF(); }
     if (!isalpha(c) && c != '_' && c != '$')
 	illegal_tag(t_lineno, t_line, t_cptr);
-
     cinc = 0;
     do { cachec(c); c = *++cptr; } while (IS_IDENT(c));
-
-    c = nextc();
-    if (c == EOF) unexpected_EOF();
-    if (c != '>')
-	illegal_tag(t_lineno, t_line, t_cptr);
-    ++cptr;
-
+    if (braces) {
+	c = nextc();
+	if (c == EOF) unexpected_EOF();
+	if (c != '>')
+	    illegal_tag(t_lineno, t_line, t_cptr);
+	++cptr; }
     FREE(t_line);
     havetags = 1;
     return cache_tag(cache, cinc);
-}
-
-static char *scan_id(void)
-{
-char	*b = cptr;
-
-    while (isalnum(*cptr) || *cptr == '_' || *cptr == '$') cptr++;
-    return cache_tag(b, cptr-b);
 }
 
 void declare_tokens(int assoc)
@@ -747,14 +693,14 @@ void declare_tokens(int assoc)
     register int c;
     register bucket *bp;
     int value;
-    char *tag = 0;
+    union_tag *tag = 0;
 
     if (assoc != TOKEN) ++prec;
 
     c = nextc();
     if (c == EOF) unexpected_EOF();
     if (c == '<') {
-	tag = get_tag();
+	tag = get_tag(1);
 	c = nextc();
 	if (c == EOF) unexpected_EOF(); }
 
@@ -803,7 +749,7 @@ int	args = 0, c;
 	c = nextc();
 	if (c == EOF) unexpected_EOF();
 	if (c != '<') syntax_error(lineno, line, cptr);
-	tags[args++] = get_tag();
+	tags[args++] = get_tag(1)->name;
 	c = nextc();
 	if (c == ')') break;
 	if (c == EOF) unexpected_EOF(); }
@@ -820,11 +766,11 @@ void declare_types()
 {
     register int c;
     register bucket *bp=0;
-    char *tag=0;
+    union_tag *tag=0;
 
     c = nextc();
     if (c == '<') {
-	tag = get_tag();
+	tag = get_tag(1);
 	c = nextc(); }
     if (c == EOF) unexpected_EOF();
 
@@ -846,10 +792,6 @@ void declare_types()
 	    if (bp->tag && tag != bp->tag)
 		retyped_warning(bp->name);
 	    bp->tag = tag; } }
-}
-
-void declare_destructor()
-{
 }
 
 void declare_start()
@@ -1031,7 +973,7 @@ char	*b;
     b = p;
     while (isalnum(*p) || *p == '_' || *p == '$') p++;
     if (save) {
-	*save = cache_tag(b, p-b); }
+	*save = cache_tag(b, p-b)->name; }
     return p;
 }
 
@@ -1136,7 +1078,7 @@ bucket		**rhs;
 	    i = val - maxoffset;
 	  } else {
 	    i = offsets[val];
-	    if (!tag && !(tag = rhs[i]->tag) && havetags)
+	    if (!tag && !(tag = rhs[i]->tag->name) && havetags)
 	      untyped_rhs(val, rhs[i]->name);
 	  }
 	  msprintf(c, "yyvsp[%d]", i);
@@ -1224,7 +1166,7 @@ char		*tag = 0;
 	else {
 	  i = offsets[val];
 	  rv = 1 - i;
-	  if (!tag) tag = rhs[i]->tag; } }
+	  if (!tag) tag = rhs[i]->tag->name; } }
     } else if (isalpha(*p) || *p == '_') {
       char	*arg;
       if (!(p = parse_id(p, &arg)))
@@ -1410,7 +1352,7 @@ FILE	*f = action_file;
 	fprintf(f, "%s;\n", code);
 	fprintf(f, "break;\n");
 	insert_empty_rule();
-	plhs[rule]->tag = tag;
+	plhs[rule]->tag = cache_tag(tag, strlen(tag));
 	plhs[rule]->class = ARGUMENT; }
     else {
 	if (++nitems > maxitems)
@@ -1545,7 +1487,7 @@ loop:
 	    char *d_cptr = d_line + (cptr - line);
 
 	    ++cptr;
-	    tag = get_tag();
+	    tag = get_tag(1)->name;
 	    c = *cptr;
 	    if (c == '$') {
 		fprintf(f, "yyval.%s", tag);
@@ -1568,7 +1510,7 @@ loop:
 		FREE(d_line);
 		goto loop; }
 	    else if (isalpha(c) || c == '_') {
-		char *arg = scan_id();
+		char *arg = get_tag(0)->name;
 		for (i=plhs[nrules]->args-1; i>=0; i--)
 		    if (arg == plhs[nrules]->argnames[i]) break;
 		if (i<0)
@@ -1580,7 +1522,7 @@ loop:
 		dollar_error(d_lineno, d_line, d_cptr); }
 	else if (cptr[1] == '$') {
 	    if (havetags) {
-		tag = plhs[nrules]->tag;
+		tag = plhs[nrules]->tag->name;
 		if (tag == 0) untyped_lhs();
 		fprintf(f, "yyval.%s", tag); }
 	    else
@@ -1594,7 +1536,7 @@ loop:
 	    if (havetags) {
 		if (i <= 0 || i > maxoffset)
 		    unknown_rhs(i);
-		tag = rhs[offsets[i]]->tag;
+		tag = rhs[offsets[i]]->tag->name;
 		if (tag == 0)
 		    untyped_rhs(i, rhs[offsets[i]]->name);
 		fprintf(f, "yyvsp[%d].%s", offsets[i], tag); }
@@ -1615,7 +1557,7 @@ loop:
 	else if (isalpha(cptr[1]) || cptr[1] == '_') {
 	    char *arg;
 	    ++cptr;
-	    arg = scan_id();
+	    arg = get_tag(0)->name;
 	    for (i=plhs[nrules]->args-1; i>=0; i--)
 		if (arg == plhs[nrules]->argnames[i]) break;
 	    if (i<0)
@@ -1800,14 +1742,13 @@ void read_grammar()
 
 void free_tags()
 {
-    register int i;
+union_tag	*p, *next;
 
-    if (tag_table == 0) return;
-
-    for (i = 0; i < ntags; ++i) {
-	assert(tag_table[i]);
-	FREE(tag_table[i]); }
-    FREE(tag_table);
+    for (p = tag_table; p; p = next) {
+	next = p->next;
+	FREE(p->name);
+	FREE(p); }
+    tag_table = 0;
 }
 
 void pack_names()
@@ -2037,10 +1978,12 @@ void reader() {
   read_grammar();
   if(read_errs) done(1);
   free_symbol_table();
-  free_tags();
   pack_names();
   check_symbols();
   pack_symbols();
+  gen_yydestruct();
+  free_destructors();
+  free_tags();
   pack_grammar();
   free_symbols();
   print_grammar();

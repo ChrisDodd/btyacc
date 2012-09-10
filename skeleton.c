@@ -51,6 +51,8 @@ char *tables[] =
     "extern _C_ Yshort yytable[];",
     "extern _C_ Yshort yycheck[];",
     "extern _C_ Yshort yyctable[];",
+    "extern _C_ Yshort yyastable[];",
+    "extern _C_ Yshort yyttable[];",
     "",
     "#if YYDEBUG",
     "extern _C_ char *yyname[];",
@@ -62,7 +64,7 @@ char *tables[] =
 
 char *header[] =
 {
-    "#line 49 \"btyaccpa.ske\"",
+    "#line 51 \"btyaccpa.ske\"",
     "",
     "//",
     "// YYPOSN is user-defined text position type.",
@@ -364,7 +366,7 @@ char *header[] =
 
 char *body[] =
 {
-    "#line 346 \"btyaccpa.ske\"",
+    "#line 348 \"btyaccpa.ske\"",
     "",
     "//",
     "// Parser function",
@@ -720,6 +722,9 @@ char *body[] =
     "\tif(!yytrial) {",
     "\t  YYDELETEVAL(yyps->vsp[0],1);",
     "\t  YYDELETEPOSN(yyps->psp[0],1);",
+    "#ifdef YYDESTRUCT",
+    "\t  YYDESTRUCT(yyastable[yyps->ssp[0]], yyps->vsp, yyps->psp);",
+    "#endif /* YYDESTRUCT */",
     "\t}",
     "        --(yyps->ssp);",
     "        --(yyps->vsp);",
@@ -742,6 +747,10 @@ char *body[] =
     "    if(!yytrial) {",
     "      YYDELETEVAL(yylval,0);",
     "      YYDELETEPOSN(yyposn,0);",
+    "#ifdef YYDESTRUCT",
+    "      if (yychar > 0)",
+    "        YYDESTRUCT(yyastable[yyttable[yychar]], &yylval, &yyposn);",
+    "#endif /* YYDESTRUCT */",
     "    }",
     "    yychar = (-1);",
     "    goto yyloop;",
@@ -794,7 +803,7 @@ char *body[] =
 
 char *trailer[] =
 {
-    "#line 771 \"btyaccpa.ske\"",
+    "#line 780 \"btyaccpa.ske\"",
     "",
     "  default:",
     "    break;",
@@ -923,12 +932,20 @@ char *trailer[] =
     "  }",
     "",
     "  YYSTYPE *pv;",
+    "#ifdef YYPOSN",
+    "  YYPOSN *pp = yyps->ps;",
+    "#endif",
+    "#ifdef YYDESTRUCT",
+    "  Yshort *ps = yyps->ss;",
+    "#endif",
     "  for(pv=yyps->vs; pv<yyps->vsp; pv++) {",
     "    YYDELETEVAL(*pv,2);",
+    "#if defined(YYDESTRUCT)",
+    "    YYDESTRUCT(yyastable[*ps++], pv, pp++);",
+    "#endif /* YYDESTRUCT */",
     "  }",
     "",
     "#ifdef YYPOSN",
-    "  YYPOSN *pp;",
     "  for(pp=yyps->ps; pp<yyps->psp; pp++) {",
     "    YYDELETEPOSN(*pp,2);",
     "  }",

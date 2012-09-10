@@ -7,7 +7,7 @@ distribution, which is a public domain yacc clone put
 together by the good folks at Berkeley.  This code is
 distributed with NO WARRANTEE and is public domain. 
 It is certain to contain bugs, which you should 
-report to: chrisd@collins.com.
+report to: cdodd@acm.org
 
 Vadim Maslov of Siber Systems <vadik@siber.com> 
 considerably modified BTYACC to make it suitable 
