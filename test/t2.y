@@ -214,3 +214,7 @@ block_statement($e):
 	  { $$ = $2;
 	    @@.start = @1.start; @@.end = @3.end; }
   ;
+
+%%
+
+/* trailing code */

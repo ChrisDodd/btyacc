@@ -23,9 +23,7 @@ written in the C programming language.
 .I Yacc
 normally writes the parse tables and the driver routine to the file
 .IR y.tab.c.
-.PP
-The following options are available:
-.RS
+.SH OPTIONS
 .TP
 \fB-b \fIprefix\fR
 The
@@ -87,11 +85,105 @@ compatibility with POSIX yacc
 \fB-S \fIskeleton file\fR
 The \fB-S\fR option causes a different skeleton file to be used.  The
 default skeleton file is built in to \fIbtyacc\fR when it is built.
-.RE
-.PP
-If the environment variable TMPDIR is set, the string denoted by
-TMPDIR will be used as the name of the directory where the temporary
-files are created.
+.TP
+\fB-D\fIflag\fR
+Define a conditional compilation flag
+.SH GRAMMAR DESCRIPTION
+The grammar specification read by \fIbtyacc\fR consists of three sections
+separated by \fB%%\fR markers
+
+.EX
+    DECLARATIONS
+    %%
+    GRAMMAR RULES
+    %%
+    CODE
+.EE
+
+The \fBCODE\fR section is optional, and is copied directly to the output code file without change.
+.SH DECLARATIONS
+.TP
+.B %{
+.TQ
+.B %}
+Copy text directly to the output code file without change.  This may be used
+for any declarations or other initialization needed for other declarations or action code
+.TP
+\fB%define \fIflag\fR
+Defines \fIflag\fR for future conditional inclusion
+.TP
+\fB%ifdef \fIflag\fR
+.TQ
+.B %endif
+Tests \fIflag\fR, and include the code between the \fB%ifdef\fR and
+\fB%endif\fR tags only if it has been set by a previous \fB%define\fR
+declaration or \fB-D\fR option
+.TP
+\fB%include \fIfile\fR
+Include the contents of \fIfile\fR in the grammar description at this point
+.TP
+\fB%start \fIsymbol\fR
+Declare the start (top level) symbol in the grammar.  If there is no
+\fB%start\fR declaration, the first grammar symbol mentioned in the
+grammar section will be the start symbol
+.TP
+\fB%union\fR { ... }
+Declares a union type used to hold semantic attributes used in the
+actions of the grammar.  All code up to the matching \fB}\fR is included
+in the union.  Each field of the union defines a semantic type that may
+be used for inherited and synthesized attribures in the grammar
+.TP
+\fB%token\fR [\fB<\fItype\fB>\fR] \fIname\fR... [\fIvalue\fR]
+.TQ
+\fB%left\fR [\fB<\fItype\fB>\fR] \fIname\fR... [\fIvalue\fR]
+.TQ
+\fB%right\fR [\fB<\fItype\fB>\fR] \fIname\fR... [\fIvalue\fR]
+.TQ
+\fB%nonassoc\fR [\fB<\fItype\fB>\fR] \fIname\fR... [\fIvalue\fR]
+Declare tokens (terminal symbols) for the grammar.  The \fItype\R, if
+present, defines the semantic type (union tag) of the attribute associated
+with the symbol.  The \fIvalue\fR is an integer value for the token.  The
+\fB%left\fR, \fB%right\fR, and \fB%nonassoc\fR directives also associate a
+precedence and associativity with the terminal to resolve grammar conflicts.
+.TP
+\fB%type\fR \fB<\fItype\fB> \fIname\fR[\fB(<\fItype\fB>\fR, ...\fB)\fR]...
+Declare types for synthesized and inherited attributes of non-terminal
+symbols.  Each non-terminal symbol may have a single synthesized attribute
+(the initial \fB<\fItype\fB>\fR) and zero or more inherited attributes
+(the \fB<\fItype\fB>\fR in the parenthesis.)
+.TP
+\fB%destructor {\fR ... \fB}\fR \fB<\fItype\fB>\fR... \fIname\fR...
+Declare a destructor for attributes of some type or token.  Whenever
+attributes are discarded, a destructor function will be called to
+clean up any resources that might be associated with the attribute.
+For attributes associated with tokens and synthesized attributes of
+non-terminals, a destructor for the symbol will be used in preference
+to the one for the type if both are defined.  Inherited attributes are
+destroyed based solely on the type.
+.TP
+\fB%location\fR { ... }
+Define a location struct for tracking locations of symbols.  This struct
+will be defined as the macro \fBYYPOSN\fR in the generated code and
+is treated as an additional synthesized attribute for every token and
+non-terminal in the grammar.  As such, it can actually be used for any
+information that should be associated with every symbol.
+.TP
+\fB%ident\fR "\fIstring\fR"
+produces an \fI#ident\fR in the output code file, used by some source
+management tools
+.SH ENVIRONMENT
+.TP
+.B TMPDIR
+If the environment variable \fBTMPDIR\fR is set,
+it will be used as the name of the directory where the temporary
+files are created instead of \fB/tmp\fR.
+.TP
+.B YYDEBUG
+If the generated parser is compiled with
+.B -DYYDEBUG
+, the
+.B YYDEBUG
+environment variable can be used to set the debugging level of the parser.
 .SH FILES
 .IR filename\fB.code.c
 .br

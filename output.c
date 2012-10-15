@@ -680,11 +680,13 @@ void output_table()
 
     ++outline;
 
+#ifdef DEBUG
     fprintf(stderr, "YYTABLESIZE: %d\n", high);
     if(high >= MAXSHORT) {
       fprintf(stderr, "Table is longer than %d elements. It's not gonna fly.\n", MAXSHORT);
       exit(1);
     }
+#endif
 
     fprintf(code_file, "#define YYTABLESIZE %d\n", high);
     if (!rflag)
