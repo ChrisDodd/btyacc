@@ -46,6 +46,7 @@ int		depth = 1, quote = 0, c;
 	no_space();
     memset(dtor, 0, sizeof(destructor));
     dtor->code = msdone(code);
+    dtor->lineno = a_lineno;
     do {
 	while (isspace(*cptr)) cptr++;
 	if ((c = *cptr) == '<') {
@@ -95,8 +96,9 @@ void free_destructors(void)
 
     for (dtor = destructors; dtor; dtor = next) {
 	next = dtor->next;
-	for (i = 0; i < dtor->num_tags; i++)
+	for (i = 0; i < dtor->num_tags; i++) {
 	    free(dtor->tags[i].syms);
+	    free(dtor->tags[i].trialsyms); }
 	free(dtor->tags);
 	free(dtor); }
     destructors = default_destructor = 0;
@@ -104,7 +106,7 @@ void free_destructors(void)
 }
 
 
-void add_destructor_symbol(destructor *d, int sym, union_tag *tag)
+void add_destructor_symbol(destructor *d, int sym, int trial, union_tag *tag)
 {
 int	i;
 
@@ -117,16 +119,26 @@ int	i;
 	    no_space(); }
     if (i >= d->num_tags) {
 	d->tags[i].tag = tag;
-	d->tags[i].max_syms = 4;
+	d->tags[i].max_syms = d->tags[i].max_trialsyms = 4;
 	if (!(d->tags[i].syms = malloc(4 * sizeof(int)))) no_space();
-	d->tags[i].num_syms = 0;
+	if (!(d->tags[i].trialsyms = malloc(4 * sizeof(int)))) no_space();
+	d->tags[i].num_syms = d->tags[i].num_trialsyms = 0;
 	d->num_tags++; }
-    if (d->tags[i].num_syms == d->tags[i].max_syms) {
-	d->tags[i].max_syms *= 2;
-	if (!(d->tags[i].syms = realloc(d->tags[i].syms,
-		d->tags[i].max_syms * sizeof(int))))
-	    no_space(); }
-    d->tags[i].syms[d->tags[i].num_syms++] = sym;
+    if (trial) {
+	if (d->tags[i].num_trialsyms == d->tags[i].max_trialsyms) {
+	    d->tags[i].max_trialsyms *= 2;
+	    if (!(d->tags[i].trialsyms = realloc(d->tags[i].trialsyms,
+		    d->tags[i].max_trialsyms * sizeof(int))))
+		no_space(); }
+	d->tags[i].trialsyms[d->tags[i].num_trialsyms++] = sym;
+    } else {
+	if (d->tags[i].num_syms == d->tags[i].max_syms) {
+	    d->tags[i].max_syms *= 2;
+	    if (!(d->tags[i].syms = realloc(d->tags[i].syms,
+		    d->tags[i].max_syms * sizeof(int))))
+		no_space(); }
+	d->tags[i].syms[d->tags[i].num_syms++] = sym;
+    }
 }
 
 void gen_yydestruct()
@@ -144,12 +156,14 @@ void gen_yydestruct()
 		       "void YYDESTRUCT(int sym, YYSTYPE *val, YYPOSN *pos) {\n"
 		       "    switch(sym) {\n");
     for (bp = first_symbol; bp; bp = bp->next) {
-	if (bp->dtor)
-	    add_destructor_symbol(bp->dtor, bp->index, bp->tag);
-	else if (bp->tag && bp->tag->dtor)
-	    add_destructor_symbol(bp->tag->dtor, bp->index, bp->tag);
-	else if (default_destructor)
-	    add_destructor_symbol(default_destructor, bp->index, bp->tag); }
+	dtor = bp->dtor;
+	if (!dtor && bp->tag)
+	    dtor = bp->tag->dtor;
+	if (!dtor)
+	    dtor = default_destructor;
+	if (dtor)
+	    add_destructor_symbol(dtor, bp->index, bp->trialaction>0, bp->tag);
+    }
     for (dtor = destructors; dtor; dtor = dtor->next) {
 	for (i = 0; i < dtor->num_tags; i++) {
 	    char *p = dtor->code;
@@ -157,6 +171,16 @@ void gen_yydestruct()
 	    int quote = 0;
 	    for (j = 0; j < dtor->tags[i].num_syms; j++) {
 		int sym = dtor->tags[i].syms[j];
+		fprintf(text_file, "    case %d: /* %s */\n", sym,
+			symbol_name[sym]); }
+	    if (dtor->tags[i].num_syms)
+		fprintf(text_file, "      if (!yytrial) {\n");
+	    else if (!dtor->tags[i].num_trialsyms) {
+		unused_destructor_warning(dtor->lineno);
+		continue;
+	    }
+	    for (j = 0; j < dtor->tags[i].num_trialsyms; j++) {
+		int sym = dtor->tags[i].trialsyms[j];
 		fprintf(text_file, "    case %d: /* %s */\n", sym,
 			symbol_name[sym]); }
 	    while (*p) {
@@ -197,7 +221,10 @@ void gen_yydestruct()
 		putc(*p++, text_file); }
 	    if (p[-1] != '\n')
 		putc('\n', text_file);
-	    fprintf(text_file, "#\n"); } }
+	    fprintf(text_file, "#\n");
+	    if (dtor->tags[i].num_syms)
+		fprintf(text_file, "      }\n");
+	    fprintf(text_file, "      break;\n"); } }
     fprintf(text_file, "    default:\n"
 		       "        break;\n");
     fprintf(text_file, "    }\n"

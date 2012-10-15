@@ -35,7 +35,7 @@ char *defd_vars[MAX_DEFD_VARS] = {NULL};
 bucket *goal;
 int prec;
 int gensym;
-char last_was_action;
+char last_was_action, trialaction;
 
 int maxitems;
 bucket **pitem;
@@ -1298,8 +1298,16 @@ void end_rule()
     if (!last_was_action && plhs[nrules]->tag) {
 	for (i = nitems - 1; pitem[i]; --i) continue;
 	if (pitem[i+1] == 0 || pitem[i+1]->tag != plhs[nrules]->tag)
-	    default_action_warning(); }
-
+	    default_action_warning(plhs[nrules]->name); }
+    if (last_was_action) {
+	if (plhs[nrules]->trialaction != UNDEFINED &&
+	    plhs[nrules]->trialaction != trialaction)
+	{
+	    inconsistent_trial_action_warning(plhs[nrules]->name);
+	    plhs[nrules]->trialaction = 1;
+	} else
+	    plhs[nrules]->trialaction = trialaction;
+    }
     last_was_action = 0;
     if (nitems >= maxitems) expand_items();
     pitem[nitems] = 0;
@@ -1319,6 +1327,7 @@ void insert_empty_rule()
     bp->tag = plhs[nrules]->tag;
     bp->class = ACTION;
     bp->args = 0;
+    bp->trialaction = trialaction;
 
     if ((nitems += 2) > maxitems)
 	expand_items();
@@ -1346,6 +1355,7 @@ FILE	*f = action_file;
     if (rule<0) {
 	rule = nrules;
 	insert_arg_cache(code, rule);
+	trialaction = 1;  // arg rules always run in trial mode
 	fprintf(f, "case %d:\n", rule - 2);
 	if (!lflag)
 	    fprintf(f, line_format, lineno, (inc_file?inc_file_name:input_file_name));
@@ -1437,7 +1447,6 @@ void copy_action()
     register int c;
     register int i, j, n;
     int depth;
-    int trialaction = 0;
     int haveyyval = 0;
     char *tag;
     register FILE *f = action_file;
@@ -1450,12 +1459,11 @@ void copy_action()
     if (last_was_action)
 	insert_empty_rule();
     last_was_action = 1;
+    trialaction = (*cptr == '[');
 
     fprintf(f, "case %d:\n", nrules - 2);
-    if (*cptr != '[')
+    if (!trialaction)
 	fprintf(f, "  if (!yytrial)\n");
-    else
-	trialaction = 1;
     if (!lflag)
 	fprintf(f, line_format, lineno, (inc_file?inc_file_name:input_file_name));
     if (*cptr == '=') ++cptr;

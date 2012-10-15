@@ -48,6 +48,7 @@ bucket *make_bucket(char *name)
     bp->prec = 0;
     bp->class = UNKNOWN;
     bp->assoc = TOKEN;
+    bp->trialaction = UNDEFINED;
 
     if (bp->name == 0) no_space();
     strcpy(bp->name, name);

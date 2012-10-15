@@ -221,8 +221,12 @@ void unknown_rhs(int i) {
   error(lineno, 0, 0, "$%d is untyped (out of range)", i);
 }
 
-void default_action_warning() {
-  FileError("the default action assigns an undefined value to $$");
+void default_action_warning(char *s) {
+  FileError("the default action for %s assigns an undefined value to $$", s);
+}
+
+void inconsistent_trial_action_warning(char *s) {
+  FileError("inconsistent trial actions for %s", s);
 }
 
 void undefined_goal(char *s) {
@@ -231,4 +235,9 @@ void undefined_goal(char *s) {
 
 void undefined_symbol_warning(char *s) {
   fprintf(stderr, "warning - the symbol %s is undefined\n", s);
+}
+
+void unused_destructor_warning(int lineno)
+{
+  error(lineno, 0, 0, "unused %%destructor");
 }

@@ -148,6 +148,7 @@ struct bucket
     Yshort prec;
     char class;
     char assoc;
+    signed char trialaction;
 };
 
 typedef struct union_tag union_tag;
@@ -215,10 +216,12 @@ struct destructor
 {
     destructor	*next;
     char	*code;
+    int		lineno;
     struct {
 	union_tag	*tag;
-	int		*syms;
+	int		*syms, *trialsyms;
 	int		num_syms, max_syms;
+	int		num_trialsyms, max_trialsyms;
     } *tags;
     int			num_tags, max_tags;
 };
@@ -345,7 +348,7 @@ void print_first_derives(void);
 /* dtor.c */
 void declare_destructor(void);
 void free_destructors(void);
-void add_destructor_symbol(destructor *d, int state, union_tag *tag);
+void add_destructor_symbol(destructor *d, int state, int trial, union_tag *tag);
 void gen_yydestruct(void);
 
 /* error.c */
@@ -384,9 +387,11 @@ void at_error(int, char *, char *);
 void untyped_lhs(void);
 void untyped_rhs(int, char *);
 void unknown_rhs(int);
-void default_action_warning(void);
+void default_action_warning(char *);
+void inconsistent_trial_action_warning(char *);
 void undefined_goal(char *);
 void undefined_symbol_warning(char *);
+void unused_destructor_warning(int);
 
 /* lalr.c */
 void lalr(void);
