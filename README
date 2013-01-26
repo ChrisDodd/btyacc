@@ -19,6 +19,10 @@ were incorporated into BtYacc.
 See the README.BYACC files for more about 
 Berkeley Yacc and other sources of info.
 
+btyacc is backwards compatible with the POSIX yacc specification in
+IEEE 1003.2.  A copy of the relevant specification may be available at
+ftp://ftp.fi.netbsd.org/ftp/pub/doc/posix/p1003.2/d11.2/a.3
+
 http://www.siber.com/btyacc/ is the current home of BtYacc.
 It is provided courtesy of Siber Systems http://www.siber.com/.
 

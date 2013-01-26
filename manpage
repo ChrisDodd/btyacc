@@ -127,7 +127,7 @@ Declare the start (top level) symbol in the grammar.  If there is no
 \fB%start\fR declaration, the first grammar symbol mentioned in the
 grammar section will be the start symbol
 .TP
-\fB%union\fR { ... }
+\fB%union {\fR ... \fB}\fR
 Declares a union type used to hold semantic attributes used in the
 actions of the grammar.  All code up to the matching \fB}\fR is included
 in the union.  Each field of the union defines a semantic type that may
@@ -140,7 +140,7 @@ be used for inherited and synthesized attribures in the grammar
 \fB%right\fR [\fB<\fItype\fB>\fR] \fIname\fR... [\fIvalue\fR]
 .TQ
 \fB%nonassoc\fR [\fB<\fItype\fB>\fR] \fIname\fR... [\fIvalue\fR]
-Declare tokens (terminal symbols) for the grammar.  The \fItype\R, if
+Declare tokens (terminal symbols) for the grammar.  The \fItype\fR, if
 present, defines the semantic type (union tag) of the attribute associated
 with the symbol.  The \fIvalue\fR is an integer value for the token.  The
 \fB%left\fR, \fB%right\fR, and \fB%nonassoc\fR directives also associate a
@@ -161,16 +161,60 @@ non-terminals, a destructor for the symbol will be used in preference
 to the one for the type if both are defined.  Inherited attributes are
 destroyed based solely on the type.
 .TP
-\fB%location\fR { ... }
+\fB%location {\fR ... \fB}\fR
 Define a location struct for tracking locations of symbols.  This struct
-will be defined as the macro \fBYYPOSN\fR in the generated code and
-is treated as an additional synthesized attribute for every token and
-non-terminal in the grammar.  As such, it can actually be used for any
-information that should be associated with every symbol.
+will be defined as the macro 
+.B YYPOSN
+in the generated code and is treated as an additional synthesized
+attribute for every token and non-terminal in the grammar.
+As such, it can actually be used for any information that should
+be associated with every symbol.
 .TP
 \fB%ident\fR "\fIstring\fR"
-produces an \fI#ident\fR in the output code file, used by some source
+produces an 
+.B #ident
+in the output code file, used by some source
 management tools
+.SH GRAMMAR RULES
+Grammar rules take the form
+.P
+.RS
+.I non-terminal\fR[\fB(\fIinherited-attrib\fR, ...\fB)\fR]\fB:\fR
+[ \fIsymbol\fR | \fIaction\fR ]...
+.br
+.B |
+[ \fIsymbol\fR | \fIaction\fR ]...
+.br
+[\fB ; \fR]
+.RE
+.P
+Each rule describes a sequence of terminals and non-terminals that can
+be matched and reduced to a single non-terminal, and the actions that should
+be done when that occurs.  A \fB|\fR introduces a new rule that uses the same
+left hand side non-terminal and inherited attributes as the previous rule.
+.P
+Each symbol is either the name of a declared terminal symbol, the name of a
+non-terminal symbol, or character literal (terminal) in 
+.B '
+quotes.  If
+it is the name of a non-terminal symbol with inherited attributes, it must
+be followed by a parenthesized list of expressions with values for those
+attributes to be used for further matching of the non-terminal.
+.P
+Actions come in two flavors -- \fB{}\fR-actions which run only when a rule
+is reduced while not in
+trial mode, and \fB[]\fR-actions which run regardless of trial mode.
+.SH EXAMPLES
+Inherited attributes can be used to pass context information about
+the declaration specifiers that appear before a list of declarators to all
+of the declarator actions:
+.P
+.nf
+    declaration: decl_specs declarator_list($1)
+    declarator_list($specs): declarator($specs)
+	    | declarator_list($specs) ',' declarator($specs)
+    declarator($specs): identifier { $$ = declare_name($specs, $1); }
+.fi
 .SH ENVIRONMENT
 .TP
 .B TMPDIR
