@@ -22,13 +22,11 @@ char *file_prefix = 0;
 #endif
 char *temp_form = "yacc_t_XXXXXX";
 
-int lineno;
 int outline;
 
 char *action_file_name;
 char *code_file_name;
 char *defines_file_name;
-char *input_file_name = "";
 char *output_file_name;
 char *text_file_name;
 char *union_file_name;
@@ -38,7 +36,6 @@ FILE *action_file;	/*  a temp file, used to save actions associated    */
 			/*  with rules until the parser is written	    */
 FILE *code_file;	/*  y.code.c (used when the -r option is specified) */
 FILE *defines_file;	/*  y.tab.h					    */
-FILE *input_file;	/*  the input file				    */
 FILE *output_file;	/*  y.tab.c					    */
 FILE *text_file;	/*  a temp file, used to save text until all	    */
 			/*  symbols have been defined			    */
@@ -121,7 +118,7 @@ void getargs(int argc, char **argv)
 	switch (*++s)
 	{
 	case '\0':
-	    input_file = stdin;
+	    read_from_file("-");
 	    if (i + 1 < argc) usage();
 	    return;
 
@@ -149,7 +146,8 @@ void getargs(int argc, char **argv)
 	      extern char *defd_vars[];
 	      for(ps=&defd_vars[0]; *ps; ps++) {
 		if(strcmp(*ps,var_name)==0) {
-		  error(lineno, 0, 0, "Preprocessor variable %s already defined", var_name);
+		  error(input_file->lineno, 0, 0,
+		        "Preprocessor variable %s already defined", var_name);
 		}
 	      }
 	      *ps = MALLOC(strlen(var_name)+1);
@@ -235,11 +233,11 @@ end_of_option:;
 
 no_more_options:;
     if (i + 1 != argc) usage();
-    input_file_name = argv[i];
+    read_from_file(argv[i]);
 
     if (!file_prefix) {
-      if (input_file_name) {
-	file_prefix = strdup(input_file_name);
+      if (input_file && input_file->name) {
+	file_prefix = strdup(input_file->name);
 	if ((s = strrchr(file_prefix, '.')))
 	  *s = 0;
       } else {
@@ -359,13 +357,6 @@ void create_file_names()
 void open_files()
 {
     create_file_names();
-
-    if (input_file == 0)
-    {
-	input_file = fopen(input_file_name, "r");
-	if (input_file == 0)
-	    open_error(input_file_name);
-    }
 
     action_file = fopen(action_file_name, "w");
     if (action_file == 0)

@@ -16,7 +16,7 @@ void FileError(char *fmt, ...);
 void FileError(char *fmt, ...) {
   va_list args;
 
-  fprintf(stderr, "%s:%d: ", (inc_file?inc_file_name:input_file_name), lineno);
+  fprintf(stderr, "%s:%d: ", input_file->name, input_file->lineno);
   va_start(args, fmt);
   vfprintf(stderr, fmt, args);
   va_end(args);
@@ -115,12 +115,12 @@ void unterminated_union(int lineno, char *line, char *cptr) {
 }
 
 void over_unionized(char *cptr) {
-  error(lineno, line, cptr, "too many %%union declarations");
+  error(input_file->lineno, line, cptr, "too many %%union declarations");
   exit(1);
 }
 
 void repeat_location_defined(char *cptr) {
-  error(lineno, line, cptr, "too many %%location declarations");
+  error(input_file->lineno, line, cptr, "too many %%location declarations");
   exit(1);
 }
 
@@ -129,15 +129,15 @@ void illegal_tag(int lineno, char *line, char *cptr) {
 }
 
 void illegal_character(char *cptr) {
-  error(lineno, line, cptr, "illegal character");
+  error(input_file->lineno, line, cptr, "illegal character");
 }
 
 void used_reserved(char *s) {
-  error(lineno, 0, 0, "illegal use of reserved symbol %s", s);
+  error(input_file->lineno, 0, 0, "illegal use of reserved symbol %s", s);
 }
 
 void tokenized_start(char *s) {
-  error(lineno, 0, 0, "the start symbol %s cannot be declared to be a token", s);
+  error(input_file->lineno, 0, 0, "the start symbol %s cannot be declared to be a token", s);
 }
 
 void retyped_warning(char *s) {
@@ -156,7 +156,7 @@ void revalued_warning(char *s) {
 
 
 void terminal_start(char *s) {
-  error(lineno, 0, 0, "the start symbol %s is a token", s);
+  error(input_file->lineno, 0, 0, "the start symbol %s is a token", s);
 }
 
 void restarted_warning() {
@@ -164,7 +164,7 @@ void restarted_warning() {
 }
 
 void no_grammar() {
-  error(lineno, 0, 0, "no grammar has been specified");
+  error(input_file->lineno, 0, 0, "no grammar has been specified");
 }
 
 void terminal_lhs(int lineno) {
@@ -172,7 +172,7 @@ void terminal_lhs(int lineno) {
 }
 
 void prec_redeclared() {
-  error(lineno, 0, 0, "conflicting %%prec specifiers");
+  error(input_file->lineno, 0, 0, "conflicting %%prec specifiers");
 }
 
 void unterminated_action(int lineno, char *line, char *cptr) {
@@ -184,14 +184,14 @@ void unterminated_arglist(int lineno, char *line, char *cptr) {
 }
 
 void bad_formals() {
-  error(lineno, 0, 0, "bad formal argument list");
+  error(input_file->lineno, 0, 0, "bad formal argument list");
 }
 
 void dollar_warning(int a_lineno, int i) {
-  int slineno = lineno;
-  lineno = a_lineno;
+  int slineno = input_file->lineno;
+  input_file->lineno = a_lineno;
   FileError("$%d references beyond the end of the current rule", i);
-  lineno = slineno;
+  input_file->lineno = slineno;
 }
 
 void dollar_error(int lineno, char *line, char *cptr) {
@@ -199,10 +199,10 @@ void dollar_error(int lineno, char *line, char *cptr) {
 }
 
 void at_warning(int a_lineno, int i) {
-  int slineno = lineno;
-  lineno = a_lineno;
+  int slineno = input_file->lineno;
+  input_file->lineno = a_lineno;
   FileError("@%d references beyond the end of the current rule", i);
-  lineno = slineno;
+  input_file->lineno = slineno;
 }
 
 void at_error(int lineno, char *line, char *cptr) {
@@ -210,15 +210,15 @@ void at_error(int lineno, char *line, char *cptr) {
 }
 
 void untyped_lhs() {
-  error(lineno, 0, 0, "$$ is untyped");
+  error(input_file->lineno, 0, 0, "$$ is untyped");
 }
 
 void untyped_rhs(int i, char *s) {
-  error(lineno, 0, 0, "$%d (%s) is untyped", i, s);
+  error(input_file->lineno, 0, 0, "$%d (%s) is untyped", i, s);
 }
 
 void unknown_rhs(int i) {
-  error(lineno, 0, 0, "$%d is untyped (out of range)", i);
+  error(input_file->lineno, 0, 0, "$%d is untyped (out of range)", i);
 }
 
 void default_action_warning(char *s) {
@@ -230,7 +230,7 @@ void inconsistent_trial_action_warning(char *s) {
 }
 
 void undefined_goal(char *s) {
-  error(lineno, 0, 0, "the start symbol %s is undefined", s);
+  error(input_file->lineno, 0, 0, "the start symbol %s is undefined", s);
 }
 
 void undefined_symbol_warning(char *s) {

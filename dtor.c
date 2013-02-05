@@ -9,15 +9,15 @@ void declare_destructor()
 {
 struct mstring	*code = msnew();
 destructor	*dtor;
-int             a_lineno = lineno;
+int             a_lineno = input_file->lineno;
 char            *a_line = dup_line();
 char            *a_cptr = a_line + (cptr - line - 1);
 int		depth = 1, quote = 0, c;
 
     if (nextc() != '{')
-	syntax_error(lineno, line, cptr);
-    if (!lflag) msprintf(code, line_format, lineno,
-			 (inc_file?inc_file_name:input_file_name));
+	syntax_error(input_file->lineno, line, cptr);
+    if (!lflag)
+	msprintf(code, line_format, input_file->lineno, input_file->name);
     mputc(code, *cptr++);
     while (depth > 0) {
 	switch(mputc(code, *cptr++)) {
@@ -34,7 +34,7 @@ int		depth = 1, quote = 0, c;
 	    break;
 	case '\n':
 	    if (quote)
-		unterminated_string(lineno, line, cptr);
+		unterminated_string(input_file->lineno, line, cptr);
 	    get_line();
 	    if (!line)
 		unterminated_action(a_lineno, a_line, a_cptr);
@@ -55,7 +55,7 @@ int		depth = 1, quote = 0, c;
 		if ((c = nextc()) == EOF) unexpected_EOF();
 		if (c == '*') {
 		    if (default_destructor)
-			error(lineno, line, cptr,
+			error(input_file->lineno, line, cptr,
 			      "duplicate %%destructor for <*>");
 		    else
 			default_destructor = dtor;
@@ -63,12 +63,12 @@ int		depth = 1, quote = 0, c;
 		} else if (isalpha(c) || c == '_' || c == '$') {
 		    union_tag *tag = get_tag(0);
 		    if (tag->dtor)
-			error(lineno, line, cptr,
+			error(input_file->lineno, line, cptr,
 			      "duplicate %%destructor for <%s>", tag->name);
 		    else
 			tag->dtor = dtor;
 		} else {
-		    syntax_error(lineno, line, cptr);
+		    syntax_error(input_file->lineno, line, cptr);
 		}
 		if ((c = nextc()) == EOF) unexpected_EOF();
 	    } while (c != '>');
@@ -76,12 +76,12 @@ int		depth = 1, quote = 0, c;
 	} else if (isalpha(c) || c == '_' || c == '$') {
 	    bucket *bp = get_name();
 	    if (bp->dtor)
-		error(lineno, line, cptr, "duplicate %%destructor for %s",
+		error(input_file->lineno, line, cptr, "duplicate %%destructor for %s",
 		      bp->name);
 	    else
 		bp->dtor = dtor;
 	} else if (*cptr) {
-	    syntax_error(lineno, line, cptr);
+	    syntax_error(input_file->lineno, line, cptr);
 	}
     } while (*cptr);
     get_line();

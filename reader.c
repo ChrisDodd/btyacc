@@ -12,6 +12,8 @@
 /* this is a hard limit, but seems more than adequate */
 #define MAXARGS	20
 
+file_info *input_file = 0;
+
 char *cache;
 int cinc, cache_size;
 
@@ -22,12 +24,15 @@ char saw_eof, unionized, location_defined;
 char *cptr, *line;
 int linesize;
 
-FILE *inc_file = NULL;
-char  inc_file_name[LINESIZE];
-int   inc_save_lineno;
-
-int in_ifdef = 0;
-int ifdef_skip;
+struct ifdef_state {
+  struct ifdef_state	*next;
+  file_info	*file;
+  int		lineno;
+  int		state;	/* 0 = in true part
+  			 * 1 = in false part looking for else/end
+			 * 2 = in false part looking for end */
+  int		nested;
+} *ifdef = 0;
 
 #define MAX_DEFD_VARS 1000
 char *defd_vars[MAX_DEFD_VARS] = {NULL};
@@ -57,28 +62,55 @@ int cachec(int c)
 }
 
 /*
+ * Open a file for input and make future input come from it
+ *
+ */
+void read_from_file(char *name)
+{
+  file_info *n;
+  FILE *fp;
+  if (!name) {
+    fp = stdin;
+  } else if (!(fp = fopen(name, "r"))) {
+    if (!input_file)
+      open_error(name);	/* fatal -- does not return */
+    error(input_file->lineno, 0, 0, "Cannot open include file %s", name);
+    return; }
+  n = NEW(file_info);
+  n->next = input_file;
+  n->file = fp;
+  n->name = name ? strdup(name) : 0;
+  n->lineno = 0;
+  input_file = n;
+}
+
+/*
  * Get line
  * Return: 1 - reg. line finished with '\n'.
  *         0 - EOF.
  */
 char *get_line() {
   extern int Eflag;
-  FILE *f;
   int c;
   int i;
 
-  /* VM: input from main or include file */
  NextLine:;
-  f = inc_file ? inc_file : input_file;
   i = 0;
 
-  if (saw_eof || (c = getc(f)) == EOF) {
+  if (saw_eof || (c = getc(input_file->file)) == EOF) {
 
-    /* VM: end of include file */
-    if(inc_file) {
-      fclose(inc_file);
-      inc_file = NULL;
-      lineno = inc_save_lineno;
+    /* end of current file */
+    if (input_file->next) {
+      void *t = input_file;
+      while (ifdef && ifdef->file == input_file) {
+	void *t1 = ifdef;
+	error(ifdef->lineno, 0, 0, "No %%endif for %%if");
+	ifdef = ifdef->next;
+	FREE(t1); }
+      fclose(input_file->file);
+      FREE(input_file->name);
+      input_file = input_file->next;
+      FREE(t);
       goto NextLine;
     }
 
@@ -91,75 +123,74 @@ char *get_line() {
     linesize = LINESIZE + 1;
     if (!(line = MALLOC(linesize))) no_space();
   }
-  ++lineno;
+  ++input_file->lineno;
   while ((line[i] = c) != '\n') {
     if (++i + 1 >= linesize)
       if (!(line = REALLOC(line, linesize += LINESIZE)))
 	no_space();
-    if ((c = getc(f)) == EOF) {
+    if ((c = getc(input_file->file)) == EOF) {
       c = '\n';
       saw_eof = 1;
     }
   }
   line[i+1] = 0;
 
-  /* VM: process %ifdef line */
-  if(strncmp(&line[0], "%ifdef ", 7)==0) {
-    char var_name[80];
-    int ii=0;
+  /* VM: process %ifdef/%ifndef line */
+  if (!strncmp(&line[0], "%ifdef ", 7) || !strncmp(&line[0], "%ifndef ", 8)) {
+    char *var_name = line + 7;
     char **ps;
-    for(i=7; line[i]!='\n' && line[i]!=' '; i++, ii++) {
-      var_name[ii] = line[i];
-    }
-    var_name[ii] = 0;
-    if(in_ifdef) {
-      error(lineno, 0, 0, "Cannot have nested %%ifdef");
-    }
-    /* Find the preprocessor variable */
-    for(ps=&defd_vars[0]; *ps; ps++) {
-      if(strcmp(*ps,var_name)==0) {
-	break;
-      }
-    }
-    in_ifdef = 1;
-    if(*ps) {
-      ifdef_skip = 0;
+    while (isspace(*var_name)) var_name++;
+    for(i=0; var_name[i]!='\n' && var_name[i]!=' '; i++);
+    var_name[i] = 0;
+    if (ifdef && ifdef->state) {
+      ifdef->nested++;
     } else {
-      ifdef_skip = 1;
+      struct ifdef_state *n = NEW(struct ifdef_state);
+      n->next = ifdef;
+      n->file = input_file;
+      n->lineno = input_file->lineno;
+      n->state = line[3] != 'n';
+      n->nested = 0;
+      ifdef = n;
+      /* Find the preprocessor variable */
+      for(ps=&defd_vars[0]; *ps; ps++) {
+	if(strcmp(*ps,var_name)==0) {
+	  n->state ^= 1;
+	  break;
+	}
+      }
     }
     goto NextLine;
   }
 
   /* VM: process %endif line */
   if(strncmp(&line[0], "%endif", 6)==0) {
-    if(!in_ifdef) {
-      error(lineno, 0, 0, "There is no corresponding %%ifdef for %%endif");
+    if(!ifdef || ifdef->file != input_file) {
+      error(input_file->lineno, 0, 0, "There is no corresponding %%ifdef for %%endif");
+    } else {
+      if (ifdef->nested)
+	ifdef->nested--;
+      else {
+	void *t = ifdef;
+	ifdef = ifdef->next;
+	FREE(t);
+      }
     }
-    in_ifdef = 0;
     goto NextLine;
   }
 
   /* VM: skip ordinary lines if ordered by %endif */
-  if(in_ifdef && ifdef_skip) {
+  if (ifdef && ifdef->state) {
     goto NextLine;
   }
 
   /* VM: Process %include line */
   if(strncmp(&line[0], "%include ", 9)==0) {
-    int ii=0;
-    for(i=9; line[i]!='\n' && line[i]!=' '; i++, ii++) {
-      inc_file_name[ii] = line[i];
-    }
-    inc_file_name[ii] = 0;
-    if(inc_file) {
-      error(lineno, 0, 0, "Nested include lines are not allowed");
-    }
-    inc_file = fopen(inc_file_name, "r");
-    if(inc_file==NULL) {
-      error(lineno, 0, 0, "Cannot open include file %s", inc_file_name);
-    }
-    inc_save_lineno = lineno;
-    lineno = 0;
+    char *name = line+9;
+    while (isspace(*name)) name++;
+    for(i=0; name[i]!='\n' && name[i]!=' '; i++);
+    name[i] = 0;
+    read_from_file(name);
     goto NextLine;
   }
 
@@ -175,7 +206,7 @@ char *get_line() {
     /* Find the preprocessor variable */
     for(ps=&defd_vars[0]; *ps; ps++) {
       if(strcmp(*ps,var_name)==0) {
-	error(lineno, 0, 0, "Preprocessor variable %s already defined", var_name);
+	error(input_file->lineno, 0, 0, "Preprocessor variable %s already defined", var_name);
       }
     }
     *ps = MALLOC(strlen(var_name)+1);
@@ -209,7 +240,7 @@ char *skip_comment()
 {
     register char *s;
 
-    int st_lineno = lineno;
+    int st_lineno = input_file->lineno;
     char *st_line = dup_line();
     char *st_cptr = st_line + (cptr - line);
 
@@ -308,7 +339,7 @@ int keyword()
     if (c == '@') return (LOCATION);
     if (c == '$') return (UNION);
   }
-  syntax_error(lineno, line, t_cptr);
+  syntax_error(input_file->lineno, line, t_cptr);
   /*NOTREACHED*/
   return 0;
 }
@@ -319,7 +350,7 @@ void copy_ident()
     register FILE *f = output_file;
 
     if ((c = nextc()) == EOF) unexpected_EOF();
-    if (c != '"') syntax_error(lineno, line, cptr);
+    if (c != '"') syntax_error(input_file->lineno, line, cptr);
     ++outline;
     fprintf(f, "#ident \"");
     for (;;) {
@@ -343,7 +374,7 @@ void copy_ident()
 void copy_string(int quote, FILE *f1, FILE *f2)
 {
 register int	c;
-int		s_lineno = lineno;
+int		s_lineno = input_file->lineno;
 char		*s_line = dup_line();
 char		*s_cptr = s_line + (cptr - line - 1);
 
@@ -373,7 +404,7 @@ register int	c;
 		OUTC(' '); }
 	OUTC('*'); OUTC('/'); }
     else if (c == '*') {
-	int c_lineno = lineno;
+	int c_lineno = input_file->lineno;
 	char *c_line = dup_line();
 	char *c_cptr = c_line + (cptr - line - 1);
 	OUTC(c);
@@ -395,14 +426,14 @@ void copy_text()
     register int c;
     register FILE *f = text_file;
     int need_newline = 0;
-    int t_lineno = lineno;
+    int t_lineno = input_file->lineno;
     char *t_line = dup_line();
     char *t_cptr = t_line + (cptr - line - 2);
 
     if (*cptr == '\n') {
 	if (get_line() == 0)
 	    unterminated_text(t_lineno, t_line, t_cptr); }
-    if (!lflag) fprintf(f, line_format, lineno, (inc_file?inc_file_name:input_file_name));
+    if (!lflag) fprintf(f, line_format, input_file->lineno, input_file->name);
 loop:
     switch (c = *cptr++) {
     case '\n':
@@ -440,7 +471,7 @@ void copy_structdecl(const char *kind, const char *name)
     FILE *dc_file;
     register int c;
     int depth;
-    int u_lineno = lineno;
+    int u_lineno = input_file->lineno;
     char *u_line = dup_line();
     char *u_cptr = u_line + (cptr - line - 6);
 
@@ -448,7 +479,7 @@ void copy_structdecl(const char *kind, const char *name)
     dc_file = dflag ? union_file : text_file;
     fprintf(dc_file, "\n");
     if (!lflag)
-	fprintf(dc_file, line_format, lineno, (inc_file?inc_file_name:input_file_name));
+	fprintf(dc_file, line_format, input_file->lineno, input_file->name);
     fprintf(dc_file, "typedef %s", kind);
     depth = 0;
 loop:
@@ -499,7 +530,7 @@ bucket *get_literal()
     register int n;
     register char *s;
     register bucket *bp;
-    int s_lineno = lineno;
+    int s_lineno = input_file->lineno;
     char *s_line = dup_line();
     char *s_cptr = s_line + (cptr - line);
 
@@ -663,7 +694,7 @@ union_tag	**p, *rv;
 union_tag *get_tag(int braces)
 {
     register int c = *cptr;
-    int t_lineno = lineno;
+    int t_lineno = input_file->lineno;
     char *t_line = dup_line();
     char *t_cptr = t_line + (cptr - line);
 
@@ -748,7 +779,7 @@ int	args = 0, c;
     for (;;) {
 	c = nextc();
 	if (c == EOF) unexpected_EOF();
-	if (c != '<') syntax_error(lineno, line, cptr);
+	if (c != '<') syntax_error(input_file->lineno, line, cptr);
 	tags[args++] = get_tag(1)->name;
 	c = nextc();
 	if (c == ')') break;
@@ -802,7 +833,7 @@ void declare_start()
     c = nextc();
     if (c == EOF) unexpected_EOF();
     if (!isalpha(c) && c != '_' && c != '.' && c != '$')
-	syntax_error(lineno, line, cptr);
+	syntax_error(input_file->lineno, line, cptr);
     bp = get_name();
     if (bp->class == TERM)
 	terminal_start(bp->name);
@@ -822,7 +853,7 @@ void read_declarations()
     for (;;) {
 	c = nextc();
 	if (c == EOF) unexpected_EOF();
-	if (c != '%') syntax_error(lineno, line, cptr);
+	if (c != '%') syntax_error(input_file->lineno, line, cptr);
 	switch (k = keyword()) {
 	case MARK:
 	    return;
@@ -916,12 +947,12 @@ static char *copy_args(int *alen)
 struct mstring	*s = msnew();
 int		depth = 0, len = 1, c;
 char		quote = 0;
-int		a_lineno = lineno;
+int		a_lineno = input_file->lineno;
 char		*a_line = dup_line();
 char		*a_cptr = a_line + (cptr - line - 1);
 int		skipspace = 1;
 
-    rescan_lineno = lineno;
+    rescan_lineno = input_file->lineno;
     while ((c = *cptr++) != ')' || depth || quote) {
 	if (c == ',' && !quote && !depth) {
 	    len++;
@@ -1253,18 +1284,18 @@ void advance_to_start()
 	    declare_start();
 	    break;
 	default:
-	    syntax_error(lineno, line, s_cptr); } }
+	    syntax_error(input_file->lineno, line, s_cptr); } }
 
     c = nextc();
     if (!isalpha(c) && c != '_' && c != '.' && c != '_')
-	syntax_error(lineno, line, cptr);
+	syntax_error(input_file->lineno, line, cptr);
     bp = get_name();
     if (goal == 0) {
 	if (bp->class == TERM)
 	    terminal_start(bp->name);
 	goal = bp; }
 
-    s_lineno = lineno;
+    s_lineno = input_file->lineno;
     c = nextc();
     if (c == EOF) unexpected_EOF();
     if (c == '(') {
@@ -1272,7 +1303,7 @@ void advance_to_start()
 	args = copy_args(&argslen);
 	if (args == 0) no_space();
 	c = nextc(); }
-    if (c != ':') syntax_error(lineno, line, cptr);
+    if (c != ':') syntax_error(input_file->lineno, line, cptr);
     start_rule(bp, s_lineno);
     parse_arginfo(bp, args, argslen);
     ++cptr;
@@ -1358,7 +1389,7 @@ FILE	*f = action_file;
 	trialaction = 1;  // arg rules always run in trial mode
 	fprintf(f, "case %d:\n", rule - 2);
 	if (!lflag)
-	    fprintf(f, line_format, lineno, (inc_file?inc_file_name:input_file_name));
+	    fprintf(f, line_format, lineno, input_file->name);
 	fprintf(f, "%s;\n", code);
 	fprintf(f, "break;\n");
 	insert_empty_rule();
@@ -1376,7 +1407,7 @@ void add_symbol()
 {
     register int c;
     register bucket *bp;
-    int s_lineno = lineno;
+    int s_lineno = input_file->lineno;
     char *args = 0;
     int argslen = 0;
 
@@ -1408,14 +1439,14 @@ void add_symbol()
     if (argslen == 0 && bp->args > 0 && pitem[nitems-1] == 0) {
 	int	i;
 	if (plhs[nrules]->args != bp->args)
-	    error(lineno, line, cptr, "Wrong number of default arguments "
+	    error(input_file->lineno, line, cptr, "Wrong number of default arguments "
 		  "for %s", bp->name);
 	for (i=bp->args-1; i>=0; i--)
 	    if (plhs[nrules]->argtags[i] != bp->argtags[i])
-		error(lineno, line, cptr, "Wrong type for default argument "
+		error(input_file->lineno, line, cptr, "Wrong type for default argument "
 		      "%d to %s", i+1, bp->name); }
     else if (bp->args != argslen)
-	error(lineno, line, cptr, "wrong number of arguments for %s",
+	error(input_file->lineno, line, cptr, "wrong number of arguments for %s",
 				  bp->name);
     if (args != 0) {
 	int	i;
@@ -1450,7 +1481,7 @@ void copy_action()
     int haveyyval = 0;
     char *tag;
     register FILE *f = action_file;
-    int a_lineno = lineno;
+    int a_lineno = input_file->lineno;
     char *a_line = dup_line();
     char *a_cptr = a_line + (cptr - line);
     Yshort *offsets=0, maxoffset;
@@ -1465,7 +1496,7 @@ void copy_action()
     if (!trialaction)
 	fprintf(f, "  if (!yytrial)\n");
     if (!lflag)
-	fprintf(f, line_format, lineno, (inc_file?inc_file_name:input_file_name));
+	fprintf(f, line_format, input_file->lineno, input_file->name);
     if (*cptr == '=') ++cptr;
 
     /* FIXME -- the argument offset table is computed independently in
@@ -1490,7 +1521,7 @@ loop:
     c = *cptr;
     if (c == '$') {
 	if (cptr[1] == '<') {
-	    int d_lineno = lineno;
+	    int d_lineno = input_file->lineno;
 	    char *d_line = dup_line();
 	    char *d_cptr = d_line + (cptr - line);
 
@@ -1550,7 +1581,7 @@ loop:
 		fprintf(f, "yyvsp[%d].%s", offsets[i], tag); }
 	    else {
 		if (i > n) {
-		    dollar_warning(lineno, i);
+		    dollar_warning(input_file->lineno, i);
 		    fprintf(f, "yyvsp[%d]", i - maxoffset); }
 		else
 		    fprintf(f, "yyvsp[%d]", offsets[i]); }
@@ -1569,12 +1600,12 @@ loop:
 	    for (i=plhs[nrules]->args-1; i>=0; i--)
 		if (arg == plhs[nrules]->argnames[i]) break;
 	    if (i<0)
-		error(lineno, line, cptr, "unknown argument %s", arg);
+		error(input_file->lineno, line, cptr, "unknown argument %s", arg);
 	    tag = plhs[nrules]->argtags[i];
 	    fprintf(f, "yyvsp[%d]", i - plhs[nrules]->args + 1 - n);
 	    if (tag) fprintf(f, ".%s", tag);
 	    else if (havetags)
-		error(lineno, 0, 0, "untyped argument $%s", arg);
+		error(input_file->lineno, 0, 0, "untyped argument $%s", arg);
 	    goto loop; }
     } else if (c == '@') {
 	if (cptr[1] == '@' || cptr[1] == '$') {
@@ -1585,7 +1616,7 @@ loop:
 	    ++cptr;
 	    i = get_number();
 	    if (i > n) {
-		at_warning(lineno, i);
+		at_warning(input_file->lineno, i);
 		fprintf(f, "yypsp[%d]", i - maxoffset); }
 	    else
 		fprintf(f, "yypsp[%d]", offsets[i]);
@@ -1617,7 +1648,7 @@ loop:
 	    if (!lflag) fprintf(f, "#\n");
 	    fprintf(f, "  if (!yytrial)\n");
 	    if (!lflag)
-		fprintf(f, line_format, lineno, (inc_file?inc_file_name:input_file_name));
+		fprintf(f, line_format, input_file->lineno, input_file->name);
 	    trialaction = 0;
 	    goto loop; }
 	else {
@@ -1661,7 +1692,7 @@ loop:
 	    if (!lflag) fprintf(f, "#\n");
 	    fprintf(f, "  if (!yytrial)\n");
 	    if (!lflag)
-		fprintf(f, line_format, lineno, (inc_file?inc_file_name:input_file_name));
+		fprintf(f, line_format, input_file->lineno, input_file->name);
 	    goto loop; }
 	else {
 	    fprintf(f, "\n");
@@ -1700,7 +1731,7 @@ int mark_symbol()
 	     ((c = cptr[5], !IS_IDENT(c))))
 	cptr += 5;
     else
-	syntax_error(lineno, line, cptr);
+	syntax_error(input_file->lineno, line, cptr);
 
     c = nextc();
     if (isalpha(c) || c == '_' || c == '.' || c == '$')
@@ -1708,7 +1739,7 @@ int mark_symbol()
     else if (c == '\'' || c == '"')
 	bp = get_literal();
     else {
-	syntax_error(lineno, line, cptr);
+	syntax_error(input_file->lineno, line, cptr);
 	/*NOTREACHED*/
 	return 0;}
 
@@ -1742,7 +1773,7 @@ void read_grammar()
 	else if (c == '%') {
 	    if (mark_symbol()) break; }
 	else
-	    syntax_error(lineno, line, cptr); }
+	    syntax_error(input_file->lineno, line, cptr); }
     end_rule();
     if (goal->args > 0)
 	error(0, 0, 0, "start symbol %s requires arguments", goal->name);

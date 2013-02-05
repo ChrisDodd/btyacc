@@ -87,8 +87,13 @@ skeleton.c: btyaccpa.ske skel2c
 		@echo >>$@
 		awk -f skel2c btyaccpa.ske >>$@
 
+test: program
+		@cd test; ./runtests
+
 etags TAGS:
 		etags *.c *.h
+
+.PHONY: all clean clobber distclean depend index install oldinstall listing lint program dist tar zip test
 
 ###
 closure.o: defs.h

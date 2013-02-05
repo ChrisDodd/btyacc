@@ -1176,39 +1176,39 @@ void output_trailing_text()
     if (line == 0)
 	return;
 
-    in = input_file;
+    in = input_file->file;
     out = code_file;
-    c = *cptr;
-    if (c == '\n')
+    if (!lflag)
     {
-	++lineno;
-	if ((c = getc(in)) == EOF)
-	    return;
-	if (!lflag)
-	{
-	    ++outline;
-	    fprintf(out, line_format, lineno, (inc_file?inc_file_name:input_file_name));
-	}
-	if (c == '\n')
-	    ++outline;
-	putc(c, out);
-	last = c;
-    }
-    else
-    {
-	if (!lflag)
-	{
-	    ++outline;
-	    fprintf(out, line_format, lineno, (inc_file?inc_file_name:input_file_name));
-	}
-	do { putc(c, out); } while ((c = *++cptr) != '\n');
 	++outline;
-	putc('\n', out);
-	last = '\n';
+	fprintf(out, line_format, input_file->lineno, input_file->name);
     }
+    while ((c = *cptr++) != '\n') {
+	putc(c, out); }
+    ++outline;
+    putc('\n', out);
+    last = '\n';
 
-    while ((c = getc(in)) != EOF)
+    while ((c = getc(in)) != EOF || input_file->next)
     {
+	if (c == EOF) {
+	    void *t = input_file;
+	    fclose(input_file->file);
+	    FREE(input_file->name);
+	    input_file = input_file->next;
+	    FREE(t);
+	    in = input_file->file;
+	    if (last != '\n')
+	    {
+		++outline;
+		putc('\n', out);
+		last = '\n';
+	    }
+	    if (!lflag) {
+		++outline;
+		fprintf(out, line_format, input_file->lineno, input_file->name);
+	    }
+	    continue; }
 	if (c == '\n')
 	    ++outline;
 	putc(c, out);

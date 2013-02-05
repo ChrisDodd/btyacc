@@ -129,6 +129,16 @@ typedef int Yshort;
 #define REALLOC(p,n)	(realloc((char*)(p),(unsigned)(n)))
 #define RENEW(p,n,t)	((t*)realloc((char*)(p),(unsigned)((n)*sizeof(t))))
 
+/*  the structure to track an input file beaing read */
+
+typedef struct file_info file_info;
+struct file_info
+{
+    file_info *next;
+    FILE *file;
+    char *name;
+    int lineno;
+};
 
 /*  the structure of a symbol table entry  */
 
@@ -247,7 +257,6 @@ extern char vflag;
 extern char *myname;
 extern char *cptr;
 extern char *line;
-extern int lineno;
 extern int outline;
 
 extern char *banner[];
@@ -259,19 +268,16 @@ extern char *trailer[];
 extern char *action_file_name;
 extern char *code_file_name;
 extern char *defines_file_name;
-extern char *input_file_name;
 extern char *output_file_name;
 extern char *text_file_name;
 extern char *union_file_name;
 extern char *verbose_file_name;
 
-extern FILE *inc_file;
-extern char  inc_file_name[];
+extern file_info *input_file;
 
 extern FILE *action_file;
 extern FILE *code_file;
 extern FILE *defines_file;
-extern FILE *input_file;
 extern FILE *output_file;
 extern FILE *text_file;
 extern FILE *union_file;
@@ -495,6 +501,7 @@ void write_section(char *section_name);
 
 /* reader.c */
 int cachec(int);
+void read_from_file(char *);
 char *get_line(void);
 char *dup_line(void);
 char *skip_comment(void);
