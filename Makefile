@@ -37,16 +37,20 @@ OTHERS	      = README README.BYACC \
 		Makefile btyaccpa.ske push.skel empty.y skel2c manpage	\
 		makefile.dos skeleton.c
 
+TEST_GEN      = test/*.tab.c test/*.code.c test/*.tab.h test/*.output	\
+		test/*.o test/a.out test/tmp.txt
+
 all:		$(PROGRAM)
 
 $(PROGRAM):     $(OBJS) $(LIBS)
 		$(LINKER) $(LDFLAGS) -o $(PROGRAM) $(OBJS) $(LIBS)
 
-clean:;		rm -f $(OBJS)
+clean:;		rm -f $(OBJS) $(TEST_GEN)
 
 clobber:;	rm -f $(OBJS) $(PROGRAM)
 
-distclean:;	rm -f $(OBJS) $(PROGRAM) skeleton.c *.zip *.gz
+distclean:;	rm -f $(OBJS) $(PROGRAM) skeleton.c *.zip *.gz $(TEST_GEN) \
+		test/faillog.txt
 
 depend:;	mkmf -f $(MAKEFILE) PROGRAM=$(PROGRAM) DEST=$(DEST)
 
@@ -88,7 +92,7 @@ skeleton.c: btyaccpa.ske skel2c
 		awk -f skel2c btyaccpa.ske >>$@
 
 test: program
-		@cd test; ./runtests
+		@cd test; CC=$(CC) ./runtests
 
 etags TAGS:
 		etags *.c *.h

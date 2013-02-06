@@ -148,12 +148,13 @@ void gen_yydestruct()
     int		i, j, max_symbol_value, *ttable;
 
     if (!destructors) return;
-    fprintf(text_file, "#ifdef YYPOSN\n"
-		       "#define YYDESTRUCT(S,V,P) yydestruct(S,V,P)\n"
+    fprintf(text_file, "#\n#ifdef YYPOSN\n"
+		       "#define YYDESTRUCT(T,S,V,P) yydestruct(T,S,V,P)\n"
 		       "#else\n"
-		       "#define YYDESTRUCT(S,V,P) yydestruct(S,V)\n"
+		       "#define YYDESTRUCT(T,S,V,P) yydestruct(T,S,V)\n"
 		       "#endif\n"
-		       "void YYDESTRUCT(int sym, YYSTYPE *val, YYPOSN *pos) {\n"
+		       "void YYDESTRUCT(int trial, int sym, YYSTYPE *val, "
+				       "YYPOSN *pos) {\n"
 		       "    switch(sym) {\n");
     for (bp = first_symbol; bp; bp = bp->next) {
 	dtor = bp->dtor;
@@ -174,7 +175,7 @@ void gen_yydestruct()
 		fprintf(text_file, "    case %d: /* %s */\n", sym,
 			symbol_name[sym]); }
 	    if (dtor->tags[i].num_syms)
-		fprintf(text_file, "      if (!yytrial) {\n");
+		fprintf(text_file, "      if (!trial) {\n");
 	    else if (!dtor->tags[i].num_trialsyms) {
 		unused_destructor_warning(dtor->lineno);
 		continue;
@@ -243,8 +244,11 @@ void gen_yydestruct()
 	fprintf(output_file, "static ");
     fprintf(output_file, "int yyttable[] = {");
     for (i = 0; i <= max_symbol_value; i++) {
-	if (i%10 == 0) fprintf(output_file, "\n");
+	if (i%10 == 0) {
+	    fprintf(output_file, "\n");
+	    if (!rflag) ++outline; }
 	fprintf(output_file, "%5d,", ttable[i]); }
     fprintf(output_file, "\n};\n");
+    if (!rflag) outline += 2;
     free(ttable);
 }

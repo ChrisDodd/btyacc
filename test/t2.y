@@ -14,6 +14,16 @@
 	int	line, column;
     }		start, end;
 }
+/*
+ * [test] btyacc
+ * [test] cc -c -Wall -Werror
+ * [test] btyacc -d
+ * [test] cc -c -Wall -Werror
+ * [test] btyacc -r
+ * [test] cc -c -Wall -Werror t2.code.c
+ * [test] btyacc -rd
+ * [test] cc -c -Wall -Werror t2.code.c
+ */
 
 %{
     struct Decl {

@@ -678,8 +678,6 @@ void output_table()
     register int i;
     register int j;
 
-    ++outline;
-
 #ifdef DEBUG
     fprintf(stderr, "YYTABLESIZE: %d\n", high);
     if(high >= MAXSHORT) {
@@ -688,6 +686,7 @@ void output_table()
     }
 #endif
 
+    ++outline;
     fprintf(code_file, "#define YYTABLESIZE %d\n", high);
     if (!rflag)
 	fprintf(output_file, "static ");
@@ -779,8 +778,10 @@ void output_astable()
     register int i;
     register int j;
 
-    if (!rflag)
+    if (!rflag) {
+	++outline;
 	fprintf(output_file, "#ifdef YYDESTRUCT\nstatic ");
+    }
     fprintf(output_file, "int yyastable[] = {%39d,", accessing_symbol ?
 	    accessing_symbol[0] : 0);
 
@@ -798,7 +799,7 @@ void output_astable()
 
 	fprintf(output_file, "%5d,", accessing_symbol[i]);
     }
-    if (!rflag) outline += 2;
+    if (!rflag) outline += 3;
     fprintf(output_file, "\n};\n");
     if (!rflag)
 	fprintf(output_file, "#endif /* YYDESTRUCT */\n");
@@ -876,7 +877,7 @@ void output_defines()
 		}
 		while ((c = *++s));
 	    }
-	    ++outline;
+	    if (!dflag) ++outline;
 	    fprintf(dc_file, " %d\n", symbol_value[i]);
 	}
     }

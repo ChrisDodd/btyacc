@@ -702,7 +702,7 @@ yyerrhandler:
 	  YYDELETEPOSN(yyps->psp[0],1);
 	}
 #ifdef YYDESTRUCT
-	YYDESTRUCT(yyastable[yyps->ssp[0]], yyps->vsp, yyps->psp);
+	YYDESTRUCT(yytrial!=0, yyastable[yyps->ssp[0]], yyps->vsp, yyps->psp);
 #endif /* YYDESTRUCT */
         --(yyps->ssp);
         --(yyps->vsp);
@@ -728,7 +728,7 @@ yyerrhandler:
     }
 #ifdef YYDESTRUCT
     if (yychar > 0)
-      YYDESTRUCT(yyastable[yyttable[yychar]], &yylval, &yyposn);
+      YYDESTRUCT(yytrial!=0, yyastable[yyttable[yychar]], &yylval, &yyposn);
 #endif /* YYDESTRUCT */
     yychar = (-1);
     goto yyloop;
@@ -914,7 +914,7 @@ yyabort:
   for(pv=yyps->vs; pv<yyps->vsp; pv++) {
     YYDELETEVAL(*pv,2);
 #if defined(YYDESTRUCT)
-    YYDESTRUCT(yyastable[*ps++], pv, pp++);
+    YYDESTRUCT(yytrial!=0, yyastable[*ps++], pv, pp++);
 #endif /* YYDESTRUCT */
   }
 

@@ -351,7 +351,7 @@ void copy_ident()
 
     if ((c = nextc()) == EOF) unexpected_EOF();
     if (c != '"') syntax_error(input_file->lineno, line, cptr);
-    ++outline;
+    if (!rflag) ++outline;
     fprintf(f, "#ident \"");
     for (;;) {
 	c = *++cptr;

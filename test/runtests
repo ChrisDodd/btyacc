@@ -22,7 +22,7 @@ fail=0
 for f in "$@"; do
     rv=2
     build=0
-    echo "$f:"
+    echo -n "$f"
     sed -n '/\[test\]/{s/.*\[test\] *//;p}' <$f | while read cmd rest; do
 	case $cmd in
 	btyacc)
@@ -72,17 +72,20 @@ for f in "$@"; do
 	bash -c "exit $rv"
     done
     rv=$?
+    rm -f tmp.txt
     if [ $rv -eq 130 ]; then
-	echo "INTERRUPT"
+	echo " INTERRUPT"
 	break
     elif [ $rv -eq 0 ]; then
 	echo "  no commands"
     elif [ $rv -eq 2 ]; then
-	echo PASS
+	echo " PASS"
 	let pass++
     elif [ $rv -eq 3 ]; then
-	echo FAIL
+	echo " FAIL"
 	let fail++
+    else
+	echo " unknown result($rv)"
     fi
 done
 
