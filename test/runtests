@@ -57,12 +57,38 @@ for f in "$@"; do
 		rv=3;
 	    fi
 	    ;;
+	input-file)
+	    if [ $build -lt 2 ]; then continue; fi
+	    if ./a.out <$rest >tmp.txt 2>&1; then true; else
+		if [ $rv -ne 3 ]; then echo "$f:" >>faillog.txt; fi
+		echo "> echo \"$rest\" | ./a.out" >> faillog.txt
+		cat tmp.txt >>faillog.txt
+		rv=3;
+	    fi
+	    ;;
 	input-fail)
 	    if [ $build -lt 2 ]; then continue; fi
 	    if echo "$rest" | ./a.out >tmp.txt 2>&1; then
 		if [ $rv -ne 3 ]; then echo "$f:" >>faillog.txt; fi
 		echo "> echo \"$rest\" | ./a.out" >> faillog.txt
 		cat tmp.txt >>faillog.txt
+		rv=3;
+	    fi
+	    ;;
+	match)
+	    if [ $build -lt 2 ]; then continue; fi
+	    echo "$rest" >expected.txt
+	    if diff -q expected.txt tmp.txt; then true; else
+		if [ $rv -ne 3 ]; then echo "$f:" >>faillog.txt; fi
+		diff -u expected.txt tmp.txt >>faillog.txt
+		rv=3;
+	    fi
+	    ;;
+	match-file)
+	    if [ $build -lt 2 ]; then continue; fi
+	    if diff -q $rest tmp.txt; then true; else
+		if [ $rv -ne 3 ]; then echo "$f:" >>faillog.txt; fi
+		diff -u $rest tmp.txt >>faillog.txt
 		rv=3;
 	    fi
 	    ;;

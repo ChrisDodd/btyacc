@@ -101,6 +101,7 @@ etags TAGS:
 
 ###
 closure.o: defs.h
+dtor.o: defs.h
 error.o: defs.h
 lalr.o: defs.h
 lr0.o: defs.h
@@ -109,6 +110,7 @@ mkpar.o: defs.h
 mstring.o: mstring.h
 output.o: defs.h
 reader.o: defs.h mstring.h
+readskel.o: defs.h
 skeleton.o: defs.h
 symtab.o: defs.h
 verbose.o: defs.h
