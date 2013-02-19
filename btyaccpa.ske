@@ -6,9 +6,9 @@
 
 %% banner
 
-//
-// @(#)btyaccpar, based on byacc 1.8 (Berkeley)
-//
+/*
+** @(#)btyaccpar, based on byacc 1.8 (Berkeley)
+*/
 #define YYBTYACC 1
 
 #include <stdio.h>
@@ -49,9 +49,9 @@ extern _C_ char *yyrule[];
 
 %% header
 
-//
-// YYPOSN is user-defined text position type.
-//
+/*
+** YYPOSN is user-defined text position type.
+*/
 #ifdef YYPOSN
 #ifdef YYREDUCEPOSNFUNC
 #define YYCALLREDUCEPOSN(e)   \
@@ -71,12 +71,12 @@ extern _C_ char *yyrule[];
 #endif /* YYREDUCEPOSNFUNC */
 #endif /* YYPOSN */
 
-// If delete function is not defined by the user, do not deletions.
+/* If delete function is not defined by the user, do not deletions. */
 #ifndef YYDELETEVAL
 #define YYDELETEVAL(v, x) 
 #endif
 
-// If delete function is not defined by the user, do not deletions.
+/* If delete function is not defined by the user, do not deletions. */
 #ifndef YYDELETEPOSN
 #define YYDELETEPOSN(v, x) 
 #endif
@@ -122,64 +122,64 @@ YYPOSN  yyretposn;
                                  yyps->save->save==0) goto yyvalid; } while(0)
 
 struct yyparsestate {
-  struct yyparsestate *save;        // Previously saved parser state
+  struct yyparsestate *save;        /* Previously saved parser state */
   int           state;
   int           errflag;
-  Yshort       *ss;          // state stack base
-  Yshort       *ssp;         // state stack pointer
-  YYSTYPE      *vs;          // values stack base
-  YYSTYPE      *vsp;         // value stack pointer
-  YYSTYPE       val;         // value as returned by actions
+  Yshort       *ss;          /* state stack base */
+  Yshort       *ssp;         /* state stack pointer */
+  YYSTYPE      *vs;          /* values stack base */
+  YYSTYPE      *vsp;         /* value stack pointer */
+  YYSTYPE       val;         /* value as returned by actions */
 #ifdef YYPOSN
-  YYPOSN       *ps;          // position stack base
-  YYPOSN       *psp;         // position stack pointer
-  YYPOSN        pos;         // position as returned by universal action
+  YYPOSN       *ps;          /* position stack base */
+  YYPOSN       *psp;         /* position stack pointer */
+  YYPOSN        pos;         /* position as returned by universal action */
 #endif /* YYPOSN */
-  int           lexeme;      // index of the conflict lexeme in the lexical queue
-  unsigned int  stacksize;   // current maximum stack size
-  Yshort        ctry;        // index in yyctable[] for this conflict
+  int           lexeme;      /* index of the conflict lexeme in the lexical queue */
+  unsigned int  stacksize;   /* current maximum stack size */
+  Yshort        ctry;        /* index in yyctable[] for this conflict */
 };
 
-// Current parser state
+/* Current parser state */
 static struct yyparsestate *yyps=0;
 
-// yypath!=NULL: do the full parse, starting at *yypath parser state.
+/* yypath!=NULL: do the full parse, starting at *yypath parser state. */
 static struct yyparsestate *yypath=0;
 
-// Base of the lexical value queue
+/* Base of the lexical value queue */
 static YYSTYPE *yylvals=0;
 
-// Current posistion at lexical value queue
+/* Current posistion at lexical value queue */
 static YYSTYPE *yylvp=0;
 
-// End position of lexical value queue
+/* End position of lexical value queue */
 static YYSTYPE *yylve=0;
 
-// The last allocated position at the lexical value queue
+/* The last allocated position at the lexical value queue */
 static YYSTYPE *yylvlim=0;
 
 #ifdef YYPOSN
-// Base of the lexical position queue
+/* Base of the lexical position queue */
 static YYPOSN *yylpsns=0;
 
-// Current posistion at lexical position queue
+/* Current posistion at lexical position queue */
 static YYPOSN *yylpp=0;
 
-// End position of lexical position queue
+/* End position of lexical position queue */
 static YYPOSN *yylpe=0;
 
-// The last allocated position at the lexical position queue
+/* The last allocated position at the lexical position queue */
 static YYPOSN *yylplim=0;
 #endif /* YYPOSN */
 
-// Current position at lexical token queue
+/* Current position at lexical token queue */
 static Yshort *yylexp=0;
 
 static Yshort *yylexemes=0;
 
-//
-// For use in generated program
-//
+/*
+** For use in generated program
+*/
 #define yytrial (yyps->save)
 #define yyvsp   (yyps->vsp)
 #define yyval   (yyps->val)
@@ -188,9 +188,9 @@ static Yshort *yylexemes=0;
 #define yydepth (yyps->ssp - yyps->ss)
 
 
-//
-// Local prototypes.
-//
+/*
+** Local prototypes.
+*/
 int yyparse(void);
 int yylex(void);
 
@@ -347,9 +347,9 @@ static void YYFreeState(struct yyparsestate *p) {
 
 %% body
 
-//
-// Parser function
-//
+/*
+** Parser function
+*/
 int yyparse() {
   int yym, yyn, yystate, yychar, yynewerrflag;
   struct yyparsestate *yyerrctx = NULL;
@@ -381,17 +381,17 @@ int yyparse() {
   *(yyps->ssp) = yystate = 0;
   
 
-  //
-  // Main parsing loop
-  //
+  /*
+  ** Main parsing loop
+  */
  yyloop:
   if ((yyn = yydefred[yystate])) {
     goto yyreduce;
   }
 
-  //
-  // Read one token
-  //
+  /*
+  ** Read one token
+  */
   if (yychar < 0) {
     if ((yychar = YYLex1()) < 0) yychar = 0;
 #if YYDEBUG
@@ -411,9 +411,9 @@ int yyparse() {
 #endif
   }
 
-  //
-  // Do we have a conflict?
-  //
+  /*
+  ** Do we have a conflict?
+  */
   if ((yyn = yycindex[yystate]) &&
       (yyn += yychar) >= 0 &&
       yyn <= YYTABLESIZE &&
@@ -427,7 +427,7 @@ int yyparse() {
 	       "trial parse\n", (int)yydepth, yytrial!=0, yystate);
       }
 #endif
-      // Switch to the next conflict context
+      /* Switch to the next conflict context */
       struct yyparsestate *save = yypath;
       yypath = save->save;
       ctry = save->ctry;
@@ -472,7 +472,7 @@ int yyparse() {
       }
       save->ctry = ctry;
       if (!yyps->save) {
-        // If this is a first conflict in the stack, start saving lexemes
+        /* If this is a first conflict in the stack, start saving lexemes */
         if (!yylexemes) {
 #ifdef __cplusplus
           yylexemes = new Yshort[YYSTACKGROWTH];
@@ -542,9 +542,9 @@ int yyparse() {
     } 
   }
 
-  //
-  // Is action a shift?
-  //
+  /*
+  ** Is action a shift?
+  */
   if ((yyn = yysindex[yystate]) &&
       (yyn += yychar) >= 0 &&
       yyn <= YYTABLESIZE &&
@@ -576,10 +576,11 @@ int yyparse() {
     goto yyreduce;
   }
 
-  //
-  // Action: error
-  //
+  /*
+  ** Action: error
+  */
   if (yyps->errflag) goto yyinrecovery;
+  else goto yyerrlab;	/* redundant goto to avoid 'unused label' warnings */
 yyerrlab:
   yynewerrflag = 1;
   goto yyerrhandler;
@@ -595,12 +596,12 @@ yyerrhandler:
 	     "state %d, %d tokens\n", (int)yydepth, yytrial!=0, yystate,
 	     yyps->save->state, (int)(yylvp - yylvals - yyps->save->lexeme));
 #endif
-    // Memorize most forward-looking error state in case
-    // it's really an error.
+    /* Memorize most forward-looking error state in case
+     * it's really an error. */
     if(yyerrctx==NULL || yyerrctx->lexeme<yylvp-yylvals) {
-      // Free old saved error context state
+      /* Free old saved error context state */
       if(yyerrctx) YYFreeState(yyerrctx);
-      // Create and fill out new saved error context state
+      /* Create and fill out new saved error context state */
       yyerrctx = YYNewState(yyps->ssp - yyps->ss);
       yyerrctx->save = yyps->save;
       yyerrctx->state = yystate;
@@ -629,15 +630,15 @@ yyerrhandler:
 #endif /* YYPOSN */
     ctry = ++save->ctry;
     yystate = save->state;
-    // We tried shift, try reduce now
+    /* We tried shift, try reduce now */
     if ((yyn = yyctable[ctry]) >= 0) {
       goto yyreduce;
     }
     yyps->save = save->save;
     YYFreeState(save);
-    //
-    // Nothing left on the stack -- error
-    //
+    /*
+    ** Nothing left on the stack -- error
+    */
     if (!yyps->save) {
 #if YYDEBUG
       if (yydebug) {
@@ -645,7 +646,7 @@ yyerrhandler:
 	       yytrial!=0);
       }
 #endif
-      // Restore state as it was in the most forward-advanced error
+      /* Restore state as it was in the most forward-advanced error */
       yylexp = yylexemes + yyerrctx->lexeme;
       yychar = yylexp[-1];
       yyps->ssp = yyps->ss + (yyerrctx->ssp - yyerrctx->ss);
@@ -737,9 +738,9 @@ yyerrhandler:
     goto yyloop;
   }
 
-  //
-  // Reduce the rule
-  //
+  /*
+  ** Reduce the rule
+  */
 yyreduce:
   yym = yylen[yyn];
 #if YYDEBUG
@@ -794,7 +795,7 @@ yyreduce:
 #endif
 
 #ifdef YYPOSN
-  // Perform user-defined position reduction
+  /* Perform user-defined position reduction */
 #ifdef YYREDUCEPOSNFUNC
   if(!yytrial) {
     YYCALLREDUCEPOSN(YYREDUCEPOSNFUNCARG);
@@ -820,10 +821,10 @@ yyreduce:
     yystate = YYFINAL;
     *++(yyps->ssp) = YYFINAL;
     *++(yyps->vsp) = yyps->val;
-    yyretlval = yyps->val;	// return value of root non-terminal to yylval
+    yyretlval = yyps->val;  /* return value of root non-terminal to yylval */
 #ifdef YYPOSN
     *++(yyps->psp) = yyps->pos;
-    yyretposn = yyps->pos;	// return value of root position to yyposn
+    yyretposn = yyps->pos;  /* return value of root position to yyposn */
 #endif /* YYPOSN */
     if (yychar < 0) {
       if ((yychar = YYLex1()) < 0) {
@@ -865,10 +866,10 @@ yyreduce:
   goto yyloop;
 
 
-  //
-  // Reduction declares that this path is valid.
-  // Set yypath and do a full parse
-  //
+  /*
+  ** Reduction declares that this path is valid.
+  ** Set yypath and do a full parse
+  */
 yyvalid:
   if (yypath) {
     goto yyabort;
@@ -908,25 +909,26 @@ yyabort:
     YYFreeState(yyerrctx); yyerrctx = NULL;
   }
 
-  YYSTYPE *pv;
+  {
+    YYSTYPE *pv;
 #ifdef YYPOSN
-  YYPOSN *pp = yyps->ps;
+    YYPOSN *pp = yyps->ps;
 #endif
 #ifdef YYDESTRUCT
-  Yshort *ps = yyps->ss;
+    Yshort *ps = yyps->ss;
 #endif
-  for(pv=yyps->vs; pv<yyps->vsp; pv++) {
-    YYDELETEVAL(*pv,2);
+    for(pv=yyps->vs; pv<yyps->vsp; pv++) {
+      YYDELETEVAL(*pv,2);
 #if defined(YYDESTRUCT)
-    YYDESTRUCT(yytrial!=0, yyastable[*ps++], pv, pp++);
+      YYDESTRUCT(yytrial!=0, yyastable[*ps++], pv, pp++);
 #endif /* YYDESTRUCT */
-  }
-
+    }
 #ifdef YYPOSN
-  for(pp=yyps->ps; pp<yyps->psp; pp++) {
-    YYDELETEPOSN(*pp,2);
-  }
+    for(pp=yyps->ps; pp<yyps->psp; pp++) {
+      YYDELETEPOSN(*pp,2);
+    }
 #endif /* YYPOSN */
+  }
 
   while (yyps) {
     struct yyparsestate *save = yyps;

@@ -1,6 +1,6 @@
 /*
  * [test] btyacc
- * [test] cc -Wall -Werror
+ * [test] cc -pedantic -Wall -Werror
  */
 %%
 S: error
