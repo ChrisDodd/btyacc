@@ -25,3 +25,48 @@ ftp://ftp.fi.netbsd.org/ftp/pub/doc/posix/p1003.2/d11.2/a.3
 
 http://www.siber.com/btyacc/ is the current home of BtYacc.
 It is provided courtesy of Siber Systems http://www.siber.com/.
+
+		Building BtYacc
+		---------------
+	by Chris Dodd and Vadim Maslov
+
+We used GCC and GNU make to compile BtYacc both on UNIX and
+WIN32 paltforms.  You are welcome to try different
+combinations of makes and compilers.  Most likely it will
+work, but it may require Makefile changes.
+
+There is no config script.
+Just type "make" and it should compile.
+
+AWK. If you want to change file btyaccpa.ske (backtracking 
+parser skeleton), you will need awk to compile it into 
+skeleton.c file. We used GNU AWK (gawk) version 3.0.
+
+It is known that using older versions of gawk
+may create problems in compilation, because older awks 
+have problems with backslashes at the end of a line.
+
+For MSDOS, there a "makefile.dos" that should do the trick.
+Note: makefile.dos was not tested for a long time.
+
+The result of compilation should be a single executable called
+"btyacc" which you can install anywhere you like; 
+it does not require any other files in the distribution to run.
+
+
+	       Legal Stuff
+	       -----------
+	by Chris Dodd and Vadim Maslov
+
+In English: BtYacc is freeware. BtYacc is distributed with 
+no warranty whatsoever. The author and any other contributors 
+take no responsibility for any and all consequences of its use.
+
+In Legalese: LIMITATION OF LIABILITY. NEITHER SIBER SYSTEMS
+NOR ANY OF ITS LICENSORS NOR ANY BTYACC CONTRIBUTOR SHALL BE
+LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL
+DAMAGES, OR DAMAGES FOR LOSS OF PROFITS, REVENUE, DATA OR
+DATA USE, CAUSED BY BTYACC AND INCURRED BY CUSTOMER OR ANY
+THIRD PARTY, WHETHER IN AN ACTION IN CONTRACT OR TORT, EVEN
+IF SIBER SYSTEMS HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGES.
