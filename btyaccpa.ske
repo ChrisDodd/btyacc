@@ -582,12 +582,21 @@ int yyparse() {
   if (yyps->errflag) goto yyinrecovery;
   else goto yyerrlab;	/* redundant goto to avoid 'unused label' warnings */
 yyerrlab:
+  /* explicit YYERROR from an action -- pop the rhs of the rule reduced
+   * before looking for error recovery */
+  yyps->ssp -= yym;
+  yystate = *(yyps->ssp);
+  yyps->vsp -= yym;
+#ifdef YYPOSN
+  yyps->psp -= yym;
+#endif /* YYPOSN */
+
   yynewerrflag = 1;
   goto yyerrhandler;
 yyerrquiet:
   yynewerrflag = 0;
 yyerrhandler:
-  while (yyps->save) { 
+  while (yyps->save) {
     int ctry; 
     struct yyparsestate *save = yyps->save;
 #if YYDEBUG
