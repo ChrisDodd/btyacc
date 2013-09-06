@@ -235,7 +235,7 @@ void token_actions()
 	    if (shiftcount > 0) {
 		froms[i] = r = NEW2(shiftcount, Yshort);
 		tos[i] = s = NEW2(shiftcount, Yshort);
-		min = MAXSHORT;
+		min = INT_MAX;
 		max = 0;
 		for (j = 0; j < ntokens; ++j) {
 		    if (actionrow[j]) {
@@ -249,7 +249,7 @@ void token_actions()
 	    if (reducecount > 0) {
 		froms[nstates+i] = r = NEW2(reducecount, Yshort);
 		tos[nstates+i] = s = NEW2(reducecount, Yshort);
-		min = MAXSHORT;
+		min = INT_MAX;
 		max = 0;
 		for (j = 0; j < ntokens; ++j) {
 		    if (actionrow[ntokens+j]) {
@@ -263,7 +263,7 @@ void token_actions()
 	    if (conflictcount > 0) {
 		froms[2*nstates+i] = r = NEW2(conflictcount, Yshort);
 		tos[2*nstates+i] = s = NEW2(conflictcount, Yshort);
-		min = MAXSHORT;
+		min = INT_MAX;
 		max = 0;
 		for (j = 0; j < ntokens; ++j) {
 		    if (actionrow[2*ntokens+j]) {
@@ -680,8 +680,8 @@ void output_table()
 
 #ifdef DEBUG
     fprintf(stderr, "YYTABLESIZE: %d\n", high);
-    if(high >= MAXSHORT) {
-      fprintf(stderr, "Table is longer than %d elements. It's not gonna fly.\n", MAXSHORT);
+    if(high >= INT_MAX) {
+      fprintf(stderr, "Table is longer than %d elements. It's not gonna fly.\n", INT_MAX);
       exit(1);
     }
 #endif

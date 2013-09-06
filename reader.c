@@ -14,8 +14,8 @@
 
 file_info *input_file = 0;
 
-char *cache;
-int cinc, cache_size;
+static char *cache;
+static int cinc, cache_size;
 
 int havetags=0;
 static union_tag *tag_table = 0;
@@ -24,7 +24,7 @@ char saw_eof, unionized, location_defined;
 char *cptr, *line;
 int linesize;
 
-struct ifdef_state {
+static struct ifdef_state {
   struct ifdef_state	*next;
   file_info	*file;
   int		lineno;
@@ -37,23 +37,23 @@ struct ifdef_state {
 #define MAX_DEFD_VARS 1000
 char *defd_vars[MAX_DEFD_VARS] = {NULL};
 
-bucket *goal;
-int prec;
-int gensym;
-char last_was_action, trialaction;
+static bucket *goal;
+static int prec;
+static int gensym;
+static char last_was_action, trialaction;
 
-int maxitems;
-bucket **pitem;
+static int maxitems;
+static bucket **pitem;
 
-int maxrules;
-bucket **plhs;
+static int maxrules;
+static bucket **plhs;
 
-int name_pool_size;
-char *name_pool;
+static int name_pool_size;
+static char *name_pool;
 
 char line_format[] = "#line %d \"%s\"\n";
 
-int cachec(int c)
+static int cachec(int c)
 {
     assert(cinc >= 0);
     if (cinc >= cache_size) {
@@ -558,7 +558,7 @@ bucket *get_literal()
 		    if (IS_OCTAL(c)) {
 			n = (n << 3) + (c - '0');
 			++cptr; } }
-		if (n > MAXCHAR) illegal_character(c_cptr);
+		if (n > UCHAR_MAX) illegal_character(c_cptr);
 		c = n;
 	    	break;
 	    case 'x':
@@ -572,7 +572,7 @@ bucket *get_literal()
 		    if (i < 0 || i >= 16) break;
 		    ++cptr;
 		    n = (n << 4) + i;
-		    if (n > MAXCHAR) illegal_character(c_cptr); }
+		    if (n > UCHAR_MAX) illegal_character(c_cptr); }
 		c = n;
 		break;
 	    case 'a': c = 7; break;
