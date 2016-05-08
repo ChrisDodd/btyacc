@@ -1,3 +1,9 @@
+test/*.c
+test/*.h
+test/*.output
+test/*.txt
+
+
 # Compiled Object files
 *.slo
 *.lo
