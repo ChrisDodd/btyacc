@@ -12,7 +12,7 @@ int Eflag = 0;
 
 char *symbol_prefix = "yy";
 char *myname = "yacc";
-#ifdef __MSDOS__
+#if defined(__MSDOS__) || defined(_WIN32)
 #define DIR_CHAR '\\'
 #define DEFAULT_TMPDIR "."
 char *file_prefix = "y";
