@@ -1,5 +1,15 @@
 #!/bin/bash
 
+case `uname` in
+  CYGWIN*) cygwin=1
+	   OUT=a.exe
+            ;;
+        *) cygwin=""
+	   OUT=a.out
+            ;;
+esac
+
+
 BTYACC=../btyacc
 test ${CC:=gcc}
 
@@ -51,27 +61,27 @@ for f in "$@"; do
 	    ;;
 	input)
 	    if [ $build -lt 2 ]; then continue; fi
-	    if echo "$rest" | ./a.out >tmp.txt 2>&1; then true; else
+	    if echo "$rest" | ./$OUT >tmp.txt 2>&1; then true; else
 		if [ ! -e .fail ]; then echo "$f:" >>faillog.txt; fi
-		echo "> echo \"$rest\" | ./a.out" >> faillog.txt
+		echo "> echo \"$rest\" | ./$OUT" >> faillog.txt
 		cat tmp.txt >>faillog.txt
 		touch .fail;
 	    fi
 	    ;;
 	input-file)
 	    if [ $build -lt 2 ]; then continue; fi
-	    if ./a.out <$rest >tmp.txt 2>&1; then true; else
+	    if ./$OUT <$rest >tmp.txt 2>&1; then true; else
 		if [ ! -e .fail ]; then echo "$f:" >>faillog.txt; fi
-		echo "> echo \"$rest\" | ./a.out" >> faillog.txt
+		echo "> echo \"$rest\" | ./$OUT" >> faillog.txt
 		cat tmp.txt >>faillog.txt
 		touch .fail;
 	    fi
 	    ;;
 	input-fail)
 	    if [ $build -lt 2 ]; then continue; fi
-	    if echo "$rest" | ./a.out >tmp.txt 2>&1; then
+	    if echo "$rest" | ./$OUT >tmp.txt 2>&1; then
 		if [ ! -e .fail ]; then echo "$f:" >>faillog.txt; fi
-		echo "> echo \"$rest\" | ./a.out" >> faillog.txt
+		echo "> echo \"$rest\" | ./$OUT" >> faillog.txt
 		cat tmp.txt >>faillog.txt
 		touch .fail;
 	    fi
