@@ -855,12 +855,25 @@ void output_defines()
     /* VM: Print to either code file or defines file but not to both */
     dc_file = dflag ? defines_file : code_file;
 
+	if (ntokens > 2) {
+    int empty = 1;
+    for (i = 2; i < ntokens; ++i)
+	if (is_C_identifier(symbol_name[i])) 
+		empty = 0;
+
+	if (!empty) {
+	fprintf(dc_file, "\nenum\n");
+	fprintf(dc_file, "#ifdef __cplusplus\n");
+	fprintf(dc_file, "class\n");
+	fprintf(dc_file, "#endif\n");
+	fprintf(dc_file, "YYTOKEN {\n");
+	
     for (i = 2; i < ntokens; ++i)
     {
 	s = symbol_name[i];
 	if (is_C_identifier(s))
 	{
-	    fprintf(dc_file, "#define ");
+	    fprintf(dc_file, "    ");
 	    c = *s;
 	    if (c == '"')
 	    {
@@ -878,9 +891,12 @@ void output_defines()
 		while ((c = *++s));
 	    }
 	    if (!dflag) ++outline;
-	    fprintf(dc_file, " %d\n", symbol_value[i]);
+	    fprintf(dc_file, " = %d,\n", symbol_value[i]);
 	}
     }
+	fprintf(dc_file, "};\n\n");
+	}
+	}
 
     ++outline;
     fprintf(dc_file, "#define YYERRCODE %d\n", symbol_value[1]);
@@ -974,8 +990,6 @@ void output_debug()
 
     if (!rflag) ++outline;
     fprintf(output_file, "#if YYDEBUG\n");
-    if (!rflag)
-	fprintf(output_file, "static ");
     fprintf(output_file, "char *%sname[] = {", symbol_prefix);
     j = 80;
     for (i = 0; i <= max; ++i)

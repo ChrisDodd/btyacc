@@ -10,7 +10,7 @@ static char	**ap, **ap_end, **ap_start;
 static void add_ptr(char *p)
 {
     if (ap == ap_end) {
-	int size = CHUNK;
+	size_t size = CHUNK;
 	char **nap;
 	while ((ap-ap_start) * sizeof(char *) >= size)
 	    size = size * 2;

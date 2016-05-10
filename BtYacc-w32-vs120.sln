@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BtYacc", "BtYacc-w32-vs120.vcxproj", "{F65CE8B2-964C-4CDF-90CE-3D8E36B9442C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testsuite", "test\testsuite-w32-vs120.vcxproj", "{8192E190-6FA2-4D3C-9BD7-8D82B319837F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F65CE8B2-964C-4CDF-90CE-3D8E36B9442C} = {F65CE8B2-964C-4CDF-90CE-3D8E36B9442C}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
