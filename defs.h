@@ -45,7 +45,7 @@ typedef int Yshort;
 /*  character names  */
 
 #define	NUL		'\0'    /*  the null character  */
-#define	NEWLINE		'\n'    /*  line feed  */
+#define	NL		'\n'    /*  line feed  */
 #define	SP		' '     /*  space  */
 #define	BS		'\b'    /*  backspace  */
 #define	HT		'\t'    /*  horizontal tab  */
@@ -71,39 +71,43 @@ typedef int Yshort;
 #define VERBOSE_SUFFIX  ".output"
 
 /* keyword codes */
-
-#define TOKEN 0
-#define LEFT 1
-#define RIGHT 2
-#define NONASSOC 3
-#define MARK 4
-#define TEXT 5
-#define TYPE 6
-#define START 7
-#define UNION 8
-#define IDENT 9
-#define DESTRUCTOR 10
-#define LOCATION 11
+enum Keyword {
+    TOKEN		= 0,
+    LEFT		= 1,
+    RIGHT		= 2,
+    NONASSOC 	= 3,
+    MARK 		= 4,
+    TEXT 		= 5,
+    TYPE 		= 6,
+    START 		= 7,
+    UNION 		= 8,
+    IDENT 		= 9,
+    DESTRUCTOR 	= 10,
+    LOCATION 	= 11
+};
 
 
 /*  symbol classes  */
-
-#define UNKNOWN 0
-#define TERM 1
-#define NONTERM 2
-#define ACTION 3
-#define ARGUMENT 4
+enum Symbol {
+    UNKNOWN	= 0,
+    TERM	= 1,
+    NONTERM	= 2,
+    ACTION	= 3,
+    ARGUMENT= 4
+};
 
 
 /*  the undefined value  */
-
-#define UNDEFINED (-1)
+enum Value {
+    UNDEFINED = -1
+};
 
 
 /*  action codes  */
-
-#define SHIFT 1
-#define REDUCE 2
+enum Action {
+    SHIFT	= 1,
+    REDUCE	= 2
+};
 
 
 /*  character macros  */
