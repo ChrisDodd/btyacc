@@ -49,9 +49,6 @@
     <None Include="..\README.BYACC" />
     <None Include="..\makefile.dos" />
     <None Include="..\build.h.in" />
-    <None Include="..\test\t3.y">
-      <Filter>test</Filter>
-    </None>
     <None Include="..\CHANGELOG" />
     <None Include="CHANGELOG" />
     <None Include="Makefile" />
@@ -62,6 +59,9 @@
     <None Include="makefile.dos" />
     <None Include="btyaccpa.ske" />
     <None Include="push.skel" />
+    <None Include="test\t3.y">
+      <Filter>test</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\CMakeLists.txt" />

@@ -97,7 +97,6 @@
     <None Include="..\test\ftp.y" />
     <None Include="..\test\t1.y" />
     <None Include="..\test\t2.y" />
-    <None Include="..\test\t3.y" />
     <None Include="..\test\test.y" />
     <None Include="btyaccpa.ske" />
     <None Include="CHANGELOG" />
@@ -108,6 +107,7 @@
     <None Include="README" />
     <None Include="README.BYACC" />
     <None Include="skel2c" />
+    <None Include="test\t3.y" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\CMakeLists.txt" />
