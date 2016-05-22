@@ -80,17 +80,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="..\btyaccpa.ske" />
     <None Include="..\build.h.in" />
-    <None Include="..\CHANGELOG" />
     <None Include="..\empty.y" />
-    <None Include="..\Makefile" />
-    <None Include="..\makefile.dos" />
     <None Include="..\manpage" />
-    <None Include="..\push.skel" />
-    <None Include="..\README" />
-    <None Include="..\README.BYACC" />
-    <None Include="..\skel2c" />
     <None Include="..\test\ansiC.y" />
     <None Include="..\test\ansiC2.y" />
     <None Include="..\test\error.y" />

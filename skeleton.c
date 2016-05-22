@@ -393,6 +393,8 @@ static char *body[] =
     "  }",
     "#endif",
     "  ",
+    "  yym = 0;",
+    "  yyn = 0;",
     "  yyps = YYNewState(YYDEFSTACKSIZE);",
     "  yyps->save = 0;",
     "  yynerrs = 0;",
