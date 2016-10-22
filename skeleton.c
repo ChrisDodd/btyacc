@@ -824,7 +824,7 @@ static char *body[] =
 
 static char *trailer[] =
 {
-    "#line 799 \"btyaccpa.ske\"",
+    "#line 801 \"btyaccpa.ske\"",
     "",
     "  default:",
     "    break;",

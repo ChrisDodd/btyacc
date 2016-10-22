@@ -475,6 +475,10 @@ void copy_structdecl(const char *kind, const char *name)
     char *u_line = dup_line();
     char *u_cptr = u_line + (cptr - line - 6);
 
+    if (dflag && !include_defines) {
+	fprintf(text_file, "#include \"%s\"\n\n", defines_file_name);
+	include_defines = 1; }
+
     /* VM: Print to either code file or defines file but not to both */
     dc_file = dflag ? union_file : text_file;
     fprintf(dc_file, "\n");
@@ -2010,8 +2014,6 @@ extern int read_errs;
 
 void reader() {
   write_section("banner");
-  if (dflag)
-    fprintf(text_file, "#include \"%s\"\n\n", defines_file_name);
   create_symbol_table();
   read_declarations();
   read_grammar();

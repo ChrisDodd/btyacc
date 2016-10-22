@@ -253,6 +253,7 @@ extern char lflag;
 extern char rflag;
 extern char tflag;
 extern char vflag;
+extern char include_defines;
 
 extern char *myname;
 extern char *symbol_prefix;

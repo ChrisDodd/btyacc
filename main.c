@@ -28,6 +28,7 @@ int outline;
 char *action_file_name;
 char *code_file_name;
 char *defines_file_name;
+char include_defines;
 char *output_file_name;
 char *text_file_name;
 char *union_file_name;
