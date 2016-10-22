@@ -1,7 +1,7 @@
 /*
  * [test] btyacc -v
  * [test] cc -Wall -Werror -DYYDEBUG
- * [test] input 0xf+09*010
+ * [test] input 0xf+9*010
  * [test] match 87
  */
 %left LO '+' '-'
