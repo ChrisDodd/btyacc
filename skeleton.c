@@ -621,6 +621,7 @@ static char *body[] =
     "",
     "  yynewerrflag = 1;",
     "  goto yyerrhandler;",
+    "  goto yyerrquiet; /* redundant goto to avoid 'unused label' warnings */",
     "yyerrquiet:",
     "  yynewerrflag = 0;",
     "yyerrhandler:",
@@ -725,8 +726,6 @@ static char *body[] =
     "          printf(\"yydebug[%d,%d]: state %d, ERROR recovery shifts to state \"",
     "\t         \"%d\\n\", (int)yydepth, yytrial!=0, *(yyps->ssp), yytable[yyn]);",
     "#endif",
-    "        /* Use label yyerrquiet, so that compiler does not warn */",
-    "        if(yyps->errflag != yyps->errflag) goto yyerrquiet;",
     "        yystate = yytable[yyn];",
     "        goto yyshift; ",
     "      } else {",
@@ -824,7 +823,7 @@ static char *body[] =
 
 static char *trailer[] =
 {
-    "#line 801 \"btyaccpa.ske\"",
+    "#line 800 \"btyaccpa.ske\"",
     "",
     "  default:",
     "    break;",
