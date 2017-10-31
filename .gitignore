@@ -106,6 +106,8 @@ Thumbs.db
 
 # VS generated files #
 ######################
+.vs/
+*.opendb
 *.bsc
 *.sbr
 *.obj
