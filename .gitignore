@@ -3,6 +3,8 @@ test/*.h
 test/*.output
 test/*.txt
 
+*.tab.c
+*.output
 
 # Compiled Object files
 *.slo
@@ -128,19 +130,9 @@ Thumbs.db
 *.manifest
 *.tlog
 *.lastbuildstate
+*.iobj
+*.ipdb
 *.unsuccessfulbuild
-release_shared/
-debug_shared/
-release_static/
-debug_static/
-release_static_md/
-debug_static_md/
-release_static_mt/
-debug_static_mt/
-bin/
-bin64/
-lib/
-lib64/
 *nativecodeanalysis*
 *codeanalysis*
 
