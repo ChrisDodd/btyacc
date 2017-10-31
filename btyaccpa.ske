@@ -599,6 +599,7 @@ yyerrlab:
 
   yynewerrflag = 1;
   goto yyerrhandler;
+  goto yyerrquiet; /* redundant goto to avoid 'unused label' warnings */
 yyerrquiet:
   yynewerrflag = 0;
 yyerrhandler:
@@ -703,8 +704,6 @@ yyerrhandler:
           printf("yydebug[%d,%d]: state %d, ERROR recovery shifts to state "
 	         "%d\n", (int)yydepth, yytrial!=0, *(yyps->ssp), yytable[yyn]);
 #endif
-        /* Use label yyerrquiet, so that compiler does not warn */
-        if(yyps->errflag != yyps->errflag) goto yyerrquiet;
         yystate = yytable[yyn];
         goto yyshift; 
       } else {

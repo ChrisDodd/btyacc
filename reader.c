@@ -475,6 +475,10 @@ void copy_structdecl(const char *kind, const char *name)
     char *u_line = dup_line();
     char *u_cptr = u_line + (cptr - line - 6);
 
+    if (dflag && !include_defines) {
+	fprintf(text_file, "#include \"%s\"\n\n", defines_file_name);
+	include_defines = 1; }
+
     /* VM: Print to either code file or defines file but not to both */
     dc_file = dflag ? union_file : text_file;
     fprintf(dc_file, "\n");
@@ -1561,7 +1565,7 @@ loop:
 		dollar_error(d_lineno, d_line, d_cptr); }
 	else if (cptr[1] == '$') {
 	    if (havetags) {
-		tag = plhs[nrules]->tag->name;
+		tag = plhs[nrules]->tag ? plhs[nrules]->tag->name : 0;
 		if (tag == 0) untyped_lhs();
 		fprintf(f, "%sval.%s", symbol_prefix, tag); }
 	    else
@@ -1575,7 +1579,7 @@ loop:
 	    if (havetags) {
 		if (i <= 0 || i > maxoffset)
 		    unknown_rhs(i);
-		tag = rhs[offsets[i]]->tag->name;
+		tag = rhs[offsets[i]]->tag ? rhs[offsets[i]]->tag->name : 0;
 		if (tag == 0)
 		    untyped_rhs(i, rhs[offsets[i]]->name);
 		fprintf(f, "%svsp[%d].%s", symbol_prefix, offsets[i], tag); }
@@ -2010,8 +2014,6 @@ extern int read_errs;
 
 void reader() {
   write_section("banner");
-  if (dflag)
-    fprintf(text_file, "#include \"%s\"\n\n", defines_file_name);
   create_symbol_table();
   read_declarations();
   read_grammar();

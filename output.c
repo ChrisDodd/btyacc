@@ -854,6 +854,10 @@ void output_defines()
 
     /* VM: Print to either code file or defines file but not to both */
     dc_file = dflag ? defines_file : code_file;
+    if (dflag && !include_defines) {
+	outline += 2;
+	fprintf(code_file, "#include \"%s\"\n\n", defines_file_name);
+	include_defines = 1; }
 
     for (i = 2; i < ntokens; ++i)
     {
@@ -882,7 +886,7 @@ void output_defines()
 	}
     }
 
-    ++outline;
+    if (!dflag) ++outline;
     fprintf(dc_file, "#define YYERRCODE %d\n", symbol_value[1]);
 
     if (dflag && (unionized || location_defined))

@@ -13,7 +13,7 @@ esac
 BTYACC=../btyacc
 test ${CC:=gcc}
 
-while expr "$1" : - >/dev/null; do
+while expr "x$1" : x- >/dev/null; do
     case $1 in
     -*)
     	echo >&2 "Unknown argument $1"
@@ -33,7 +33,7 @@ for f in "$@"; do
     rm -f .fail .run
     build=0
     echo -n "$f"
-    sed -n '/\[test\]/{s/.*\[test\] *//;p}' <$f | while read cmd rest; do
+    sed -n '/\[test\]/s/.*\[test\] *//p' <$f | while read cmd rest; do
 	touch .run
 	case $cmd in
 	btyacc)
