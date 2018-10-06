@@ -581,6 +581,7 @@ int yyparse() {
     yyn = yytable[yyn];
     goto yyreduce;
   }
+  yym = 0;  /* no reduction to clean up after */
 
   /*
   ** Action: error

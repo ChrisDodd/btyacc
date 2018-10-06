@@ -603,6 +603,7 @@ static char *body[] =
     "    yyn = yytable[yyn];",
     "    goto yyreduce;",
     "  }",
+    "  yym = 0;  /* no reduction to clean up after */",
     "",
     "  /*",
     "  ** Action: error",
@@ -823,7 +824,7 @@ static char *body[] =
 
 static char *trailer[] =
 {
-    "#line 800 \"btyaccpa.ske\"",
+    "#line 801 \"btyaccpa.ske\"",
     "",
     "  default:",
     "    break;",
