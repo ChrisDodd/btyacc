@@ -43,8 +43,8 @@ extern _C_ Yshort yyastable[];
 extern _C_ Yshort yyttable[];
 
 #if YYDEBUG
-extern _C_ char *yyname[];
-extern _C_ char *yyrule[];
+extern _C_ const char *yyname[];
+extern _C_ const char *yyrule[];
 #endif
 
 %% header
@@ -362,7 +362,7 @@ int yyparse() {
 #endif /* YYREDUCEPOSNFUNC */
 
 #if YYDEBUG
-  char *yys;
+  const char *yys;
   
   if ((yys = getenv("YYDEBUG"))) {
     yyn = *yys;
