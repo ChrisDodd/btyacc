@@ -11,6 +11,7 @@
 */
 #define YYBTYACC 1
 
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
