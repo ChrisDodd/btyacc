@@ -136,7 +136,7 @@ struct yyparsestate {
   YYPOSN        pos;         /* position as returned by universal action */
 #endif /* YYPOSN */
   ptrdiff_t     lexeme;      /* index of the conflict lexeme in the lexical queue */
-  ptrdiff_t     stacksize;   /* current maximum stack size */
+  size_t        stacksize;   /* current maximum stack size */
   Yshort        ctry;        /* index in yyctable[] for this conflict */
 };
 
