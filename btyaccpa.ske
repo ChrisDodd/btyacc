@@ -136,7 +136,7 @@ struct yyparsestate {
   YYPOSN        pos;         /* position as returned by universal action */
 #endif /* YYPOSN */
   ptrdiff_t     lexeme;      /* index of the conflict lexeme in the lexical queue */
-  size_t        stacksize;   /* current maximum stack size */
+  ptrdiff_t     stacksize;   /* current maximum stack size */
   Yshort        ctry;        /* index in yyctable[] for this conflict */
 };
 
@@ -194,8 +194,8 @@ static Yshort *yylexemes=0;
 int yyparse(void);
 int yylex(void);
 
-static void YYSCopy(YYSTYPE *to, YYSTYPE *from, size_t size) {
-  size_t i;
+static void YYSCopy(YYSTYPE *to, YYSTYPE *from, ptrdiff_t size) {
+  ptrdiff_t i;
   for (i = size-1; i >= 0; i--)
     to[i] = from[i];
 }
