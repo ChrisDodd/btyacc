@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.2)
 
 project(btyacc C)
 
@@ -11,7 +11,7 @@ add_custom_command(
     COMMAND "${CMAKE_COMMAND}"
     "-Dinput=${src}/btyaccpa.ske"
     "-Doutput=${bin}/skeleton.c.tmp"
-    "-P${src}/cmake/skel2c.cmake"
+    -P "${src}/cmake/skel2c.cmake"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
     "${bin}/skeleton.c.tmp"
     "${bin}/skeleton.c"
