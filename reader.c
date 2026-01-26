@@ -188,7 +188,13 @@ char *get_line() {
   if(strncmp(&line[0], "%include ", 9)==0) {
     char *name = line+9;
     while (isspace(*name)) name++;
-    for(i=0; name[i]!='\n' && name[i]!=' '; i++);
+	/*
+	if parsing file was created in windows but processing on linux 
+	we need  delete windows end of line mark as \r\n	 (CR + LF)
+	!(name[i] =='\r' && name[i+1]=='\n').
+	Otherwise, the file will not be found.
+	*/
+    for(i=0; name[i]!='\n' && name[i]!=' ' && !(name[i] =='\r' && name[i+1]=='\n'); i++);
     name[i] = 0;
     read_from_file(name);
     goto NextLine;
