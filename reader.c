@@ -188,9 +188,13 @@ char *get_line() {
   if(strncmp(&line[0], "%include ", 9)==0) {
     char *name = line+9;
     while (isspace(*name)) name++;
-    for(i=0; name[i]!='\n' && name[i]!=' '; i++);
+    i = strlen(name);
+    while (i > 0 && isspace(name[i-1])) --i;
     name[i] = 0;
-    read_from_file(name);
+    if (i == 0)
+      error(input_file->lineno, 0, 0, "No file name with %include");
+    else
+      read_from_file(name);
     goto NextLine;
   }
 
